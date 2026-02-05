@@ -1,0 +1,10 @@
+{
+  "appName": "MyEmbeddedApp",
+  "version": "1.0.0",
+  "settings": {
+    "debug": false,
+    "maxConnections": 100,
+    "timeout": 30000
+  },
+  "features": ["auth", "logging", "caching"]
+}

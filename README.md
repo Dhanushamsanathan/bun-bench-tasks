@@ -4,7 +4,7 @@ A synthetic benchmark repository for evaluating AI code generation models on Bun
 
 ## Overview
 
-This repository contains **50 controlled benchmark tasks** with:
+This repository contains **80 controlled benchmark tasks** with:
 - Intentionally buggy code
 - Failing tests that pass when fixed
 - Reference solutions
@@ -25,6 +25,17 @@ Each task tests understanding of specific Bun APIs and common programming patter
 | Crypto | 036-040 | `Bun.password`, `Bun.CryptoHasher` |
 | Environment | 041-045 | `Bun.env`, `.env` files |
 | Shell/CLI | 046-050 | `Bun.$`, `Bun.argv` |
+| TCP/UDP | 051-053 | `Bun.listen()`, `Bun.connect()`, `Bun.udpSocket()` |
+| Redis | 054-056 | `Bun.RedisClient`, pub/sub, expiration |
+| PostgreSQL | 057-060 | `Bun.sql`, transactions, pools, types |
+| Streams | 061-064 | `ReadableStream`, `WritableStream`, `TransformStream` |
+| HTMLRewriter | 065-067 | `HTMLRewriter`, element/text handlers |
+| Glob | 068-069 | `Bun.Glob`, pattern matching, scanning |
+| Workers | 070-072 | `Worker`, messaging, error handling |
+| Cookies | 073-074 | `Bun.CookieMap`, `Bun.Cookie` |
+| Semver | 075-076 | `Bun.semver`, version comparison, ranges |
+| Snapshots | 077-078 | `toMatchSnapshot()`, inline snapshots |
+| Compile | 079-080 | `bun build --compile`, asset embedding |
 
 ## Task Structure
 
@@ -99,9 +110,9 @@ bun test
 
 | Level | Tasks | Description |
 |-------|-------|-------------|
-| Easy | 001-010, 041-045 | Single-line fixes, obvious bugs |
-| Medium | 011-030 | Multiple changes, API understanding |
-| Hard | 031-040, 046-050 | Complex patterns, security issues |
+| Easy | 001-010, 041-045, 073-076 | Single-line fixes, obvious bugs |
+| Medium | 011-030, 051-056, 068-072 | Multiple changes, API understanding |
+| Hard | 031-040, 046-050, 057-067, 077-080 | Complex patterns, security issues |
 
 ## License
 
