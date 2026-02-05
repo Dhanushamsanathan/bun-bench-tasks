@@ -1,0 +1,116 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`createUser creates user with correct structure 1`] = `
+{
+  "createdAt": Any<Date>,
+  "email": "john@example.com",
+  "id": Any<String>,
+  "metadata": {
+    "lastLogin": null,
+    "loginCount": 0,
+    "preferences": {
+      "notifications": true,
+      "theme": "light",
+    },
+  },
+  "name": "John Doe",
+  "role": "admin",
+  "updatedAt": Any<Date>,
+}
+`;
+
+exports[`createUser creates user with default role 1`] = `
+{
+  "createdAt": Any<Date>,
+  "email": "jane@example.com",
+  "id": Any<String>,
+  "metadata": {
+    "lastLogin": null,
+    "loginCount": 0,
+    "preferences": {
+      "notifications": true,
+      "theme": "light",
+    },
+  },
+  "name": "Jane Smith",
+  "role": "user",
+  "updatedAt": Any<Date>,
+}
+`;
+
+exports[`createUser generates valid UUID for id 1`] = `
+{
+  "createdAt": Any<Date>,
+  "email": "uuid@example.com",
+  "id": StringMatching /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+  "metadata": {
+    "lastLogin": null,
+    "loginCount": 0,
+    "preferences": {
+      "notifications": true,
+      "theme": "light",
+    },
+  },
+  "name": "UUID Test",
+  "role": "user",
+  "updatedAt": Any<Date>,
+}
+`;
+
+exports[`createUserProfile creates profile summary 1`] = `
+{
+  "displayName": "Test User",
+  "email": "test@example.com",
+  "memberSince": Any<String>,
+  "userId": Any<String>,
+}
+`;
+
+exports[`createUserProfile formats memberSince as ISO string 1`] = `
+{
+  "displayName": "Date Format Test",
+  "email": "date@example.com",
+  "memberSince": StringMatching /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/,
+  "userId": Any<String>,
+}
+`;
+
+exports[`createAuditLog creates audit log entry 1`] = `
+{
+  "action": "LOGIN",
+  "details": {
+    "ip": "192.168.1.1",
+    "userAgent": "Mozilla/5.0",
+  },
+  "hash": Any<String>,
+  "id": Any<String>,
+  "timestamp": Any<Date>,
+  "userId": "user-123",
+}
+`;
+
+exports[`createAuditLog creates audit log for logout action 1`] = `
+{
+  "action": "LOGOUT",
+  "details": {
+    "reason": "user_initiated",
+  },
+  "hash": Any<String>,
+  "id": Any<String>,
+  "timestamp": Any<Date>,
+  "userId": "user-456",
+}
+`;
+
+exports[`createAuditLog generates hash with timestamp prefix 1`] = `
+{
+  "action": "UPDATE",
+  "details": {
+    "field": "email",
+  },
+  "hash": StringMatching /^\\d+-[a-z0-9]+$/,
+  "id": Any<String>,
+  "timestamp": Any<Date>,
+  "userId": "user-789",
+}
+`;

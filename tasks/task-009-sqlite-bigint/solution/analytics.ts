@@ -1,8 +1,9 @@
 import { Database } from "bun:sqlite";
 
-// FIXED: Enable strict mode for proper BigInt handling
-// When strict: true, SQLite INTEGER columns return bigint for values > MAX_SAFE_INTEGER
-const db = new Database(":memory:", { strict: true });
+// FIXED: Enable safeIntegers mode for proper BigInt handling
+// When safeIntegers: true, SQLite INTEGER columns return bigint types
+// This preserves precision for 64-bit integers (added in Bun v1.1.14)
+const db = new Database(":memory:", { safeIntegers: true });
 
 db.run(`
   CREATE TABLE events (
