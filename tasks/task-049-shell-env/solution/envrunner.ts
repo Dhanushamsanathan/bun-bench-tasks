@@ -145,7 +145,8 @@ export async function runCommandSequence(
 
   for (const cmd of commands) {
     // FIXED: Each command gets the shared environment
-    const result = await Bun.$`${{ raw: cmd }}`.env(env).nothrow();
+    // Use sh -c to ensure shell variable expansion works
+    const result = await Bun.$`sh -c ${cmd}`.env(env).nothrow();
     results.push(result.stdout.toString());
   }
 

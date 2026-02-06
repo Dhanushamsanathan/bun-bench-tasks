@@ -60,10 +60,22 @@ export function getCommand(argv: string[] = Bun.argv): string | undefined {
 /**
  * Gets positional arguments (non-flag arguments)
  * FIXED: Starts from index 2 to skip bun and script path
+ * Also handles -- separator correctly
  */
 export function getPositionalArgs(argv: string[] = Bun.argv): string[] {
   // FIXED: Start at index 2 for user arguments
-  return argv.slice(2).filter(arg => !arg.startsWith("-"));
+  const userArgs = argv.slice(2);
+  const separatorIndex = userArgs.indexOf("--");
+
+  if (separatorIndex !== -1) {
+    // Everything before -- that doesn't start with - is positional
+    const beforeSeparator = userArgs.slice(0, separatorIndex).filter(arg => !arg.startsWith("-"));
+    // Everything after -- is positional (including things starting with -)
+    const afterSeparator = userArgs.slice(separatorIndex + 1);
+    return [...beforeSeparator, ...afterSeparator];
+  }
+
+  return userArgs.filter(arg => !arg.startsWith("-"));
 }
 
 /**
