@@ -1,0 +1,7 @@
+{
+  "taskName": "task-001-content-length",
+  "model": "qwen/qwen3-next-80b-a3b-thinking",
+  "timestamp": "2026-02-09T09:11:29.130Z",
+  "prompt": "You are a Bun.js expert. Your task is to fix the buggy code in this task.\n\nTask: task-001-content-length\n\n## Problem Description\n# Task 001: Content-Length UTF-8 Bug\r\n\r\n## Problem Description\r\n\r\nThe HTTP server returns an incorrect `Content-Length` header when responding with UTF-8 encoded text containing multi-byte characters.\r\n\r\n## Bug Details\r\n\r\nThe server uses JavaScript's `string.length` property to calculate the Content-Length header value. However, `string.length` returns the number of **...",
+  "response": "\n\n```typescript\n// BUG: Uses string length instead of byte length for Content-Length header\n// This causes incorrect Content-Length for multi-byte UTF-8 characters\n\nconst server = Bun.serve({\n  port: 3001,\n  fetch(req) {\n    const body = \"こんにちは\"; // 5 chars but 15 bytes in UTF-8\n    return new Response(body, {\n      headers: {\n        \"Content-Type\": \"text/plain; charset=utf-8\",\n        // Fixed: Use Buffer.byteLength to get correct UTF-8 byte count\n        \"Content-Length\": String(Buffer.byteLength(body, 'utf8')),\n      },\n    });\n  },\n});\n\nexport default server;\n```"
+}

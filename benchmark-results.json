@@ -1,0 +1,421 @@
+{
+  "startTime": "2026-02-09T07:23:28.352Z",
+  "model": "qwen/qwen3-next-80b-a3b-thinking",
+  "totalTasks": 80,
+  "passed": 0,
+  "failed": 12,
+  "skipped": 54,
+  "noSolution": 0,
+  "tasks": [
+    {
+      "taskName": "task-001-content-length",
+      "status": "skipped",
+      "duration": 225.30270000000002,
+      "timestamp": "2026-02-09T06:56:32.362Z"
+    },
+    {
+      "taskName": "task-002-json-content-type",
+      "status": "skipped",
+      "duration": 262.99159999999995,
+      "timestamp": "2026-02-09T06:56:32.626Z"
+    },
+    {
+      "taskName": "task-003-body-parsing",
+      "status": "skipped",
+      "duration": 332.53819999999996,
+      "timestamp": "2026-02-09T06:56:32.961Z"
+    },
+    {
+      "taskName": "task-004-route-params",
+      "status": "skipped",
+      "duration": 423.3085000000001,
+      "timestamp": "2026-02-09T06:56:33.386Z"
+    },
+    {
+      "taskName": "task-005-error-status",
+      "status": "skipped",
+      "duration": 253.12079999999992,
+      "timestamp": "2026-02-09T06:56:33.648Z"
+    },
+    {
+      "taskName": "task-006-sqlite-params",
+      "status": "skipped",
+      "duration": 181.32999999999993,
+      "timestamp": "2026-02-09T06:56:33.830Z"
+    },
+    {
+      "taskName": "task-007-sqlite-transaction",
+      "status": "skipped",
+      "duration": 237.90329999999994,
+      "timestamp": "2026-02-09T06:56:34.069Z"
+    },
+    {
+      "taskName": "task-008-sqlite-blob",
+      "status": "skipped",
+      "duration": 201.3382999999999,
+      "timestamp": "2026-02-09T06:56:34.273Z"
+    },
+    {
+      "taskName": "task-009-sqlite-bigint",
+      "status": "skipped",
+      "duration": 244.5599000000002,
+      "timestamp": "2026-02-09T06:56:34.520Z"
+    },
+    {
+      "taskName": "task-010-sqlite-query-all",
+      "status": "skipped",
+      "duration": 224.0311999999999,
+      "timestamp": "2026-02-09T06:56:34.746Z"
+    },
+    {
+      "taskName": "task-011-file-encoding",
+      "status": "skipped",
+      "duration": 316.13329999999996,
+      "timestamp": "2026-02-09T06:56:35.064Z"
+    },
+    {
+      "taskName": "task-012-file-write",
+      "status": "skipped",
+      "duration": 427.9841000000001,
+      "timestamp": "2026-02-09T06:56:35.494Z"
+    },
+    {
+      "taskName": "task-015-file-exists",
+      "status": "skipped",
+      "duration": 1121.5253999999995,
+      "timestamp": "2026-02-09T06:56:37.275Z"
+    },
+    {
+      "taskName": "task-021-ws-message",
+      "status": "skipped",
+      "duration": 286.5515000000005,
+      "timestamp": "2026-02-09T06:56:38.721Z"
+    },
+    {
+      "taskName": "task-022-ws-binary",
+      "status": "skipped",
+      "duration": 231.27040000000034,
+      "timestamp": "2026-02-09T06:56:38.954Z"
+    },
+    {
+      "taskName": "task-023-ws-close",
+      "status": "skipped",
+      "duration": 1720.5616,
+      "timestamp": "2026-02-09T06:56:40.677Z"
+    },
+    {
+      "taskName": "task-024-ws-broadcast",
+      "status": "skipped",
+      "duration": 2085.0290999999997,
+      "timestamp": "2026-02-09T06:56:42.766Z"
+    },
+    {
+      "taskName": "task-025-ws-auth",
+      "status": "skipped",
+      "duration": 848.288199999999,
+      "timestamp": "2026-02-09T06:56:43.616Z"
+    },
+    {
+      "taskName": "task-026-fetch-error",
+      "status": "skipped",
+      "duration": 634.5228999999999,
+      "timestamp": "2026-02-09T06:56:44.252Z"
+    },
+    {
+      "taskName": "task-027-fetch-timeout",
+      "status": "skipped",
+      "duration": 1954.6443999999992,
+      "timestamp": "2026-02-09T06:56:46.208Z"
+    },
+    {
+      "taskName": "task-028-fetch-headers",
+      "status": "skipped",
+      "duration": 256.08359999999993,
+      "timestamp": "2026-02-09T06:56:46.466Z"
+    },
+    {
+      "taskName": "task-029-fetch-json",
+      "status": "skipped",
+      "duration": 216.90239999999903,
+      "timestamp": "2026-02-09T06:56:46.685Z"
+    },
+    {
+      "taskName": "task-030-fetch-response",
+      "status": "skipped",
+      "duration": 678.0011999999988,
+      "timestamp": "2026-02-09T06:56:47.365Z"
+    },
+    {
+      "taskName": "task-036-password-hash",
+      "status": "skipped",
+      "duration": 760.8206000000009,
+      "timestamp": "2026-02-09T06:56:49.130Z"
+    },
+    {
+      "taskName": "task-037-hash-compare",
+      "status": "skipped",
+      "duration": 1135.519900000003,
+      "timestamp": "2026-02-09T06:56:50.267Z"
+    },
+    {
+      "taskName": "task-038-uuid",
+      "status": "skipped",
+      "duration": 177.6046000000024,
+      "timestamp": "2026-02-09T06:56:50.447Z"
+    },
+    {
+      "taskName": "task-039-hmac",
+      "status": "skipped",
+      "duration": 223.9438999999984,
+      "timestamp": "2026-02-09T06:56:50.672Z"
+    },
+    {
+      "taskName": "task-040-hash-stream",
+      "status": "skipped",
+      "duration": 214.70820000000094,
+      "timestamp": "2026-02-09T06:56:50.888Z"
+    },
+    {
+      "taskName": "task-041-env-vars",
+      "status": "skipped",
+      "duration": 186.58070000000225,
+      "timestamp": "2026-02-09T06:56:51.077Z"
+    },
+    {
+      "taskName": "task-042-env-file",
+      "status": "skipped",
+      "duration": 250.3783000000003,
+      "timestamp": "2026-02-09T06:56:51.328Z"
+    },
+    {
+      "taskName": "task-043-env-types",
+      "status": "skipped",
+      "duration": 255.34570000000167,
+      "timestamp": "2026-02-09T06:56:51.586Z"
+    },
+    {
+      "taskName": "task-044-env-validate",
+      "status": "skipped",
+      "duration": 189.91619999999966,
+      "timestamp": "2026-02-09T06:56:51.777Z"
+    },
+    {
+      "taskName": "task-045-import-meta",
+      "status": "skipped",
+      "duration": 170.74820000000182,
+      "timestamp": "2026-02-09T06:56:51.949Z"
+    },
+    {
+      "taskName": "task-050-cli-args",
+      "status": "skipped",
+      "duration": 167.84199999999691,
+      "timestamp": "2026-02-09T06:56:54.341Z"
+    },
+    {
+      "taskName": "task-051-tcp-server",
+      "status": "skipped",
+      "duration": 1415.5620000000017,
+      "timestamp": "2026-02-09T06:56:55.759Z"
+    },
+    {
+      "taskName": "task-052-tcp-client",
+      "status": "skipped",
+      "duration": 2164.2828999999983,
+      "timestamp": "2026-02-09T06:56:57.926Z"
+    },
+    {
+      "taskName": "task-053-udp-socket",
+      "status": "skipped",
+      "duration": 1611.3407000000007,
+      "timestamp": "2026-02-09T06:56:59.539Z"
+    },
+    {
+      "taskName": "task-057-sql-query",
+      "status": "skipped",
+      "duration": 378.3625000000029,
+      "timestamp": "2026-02-09T06:57:52.010Z"
+    },
+    {
+      "taskName": "task-060-sql-types",
+      "status": "skipped",
+      "duration": 385.23689999998896,
+      "timestamp": "2026-02-09T06:57:52.848Z"
+    },
+    {
+      "taskName": "task-061-readable-stream",
+      "status": "skipped",
+      "duration": 174.59019999999146,
+      "timestamp": "2026-02-09T06:57:53.025Z"
+    },
+    {
+      "taskName": "task-062-writable-stream",
+      "status": "skipped",
+      "duration": 2906.828600000008,
+      "timestamp": "2026-02-09T06:57:55.934Z"
+    },
+    {
+      "taskName": "task-063-transform-stream",
+      "status": "skipped",
+      "duration": 176.96450000000186,
+      "timestamp": "2026-02-09T06:57:56.113Z"
+    },
+    {
+      "taskName": "task-064-stream-pipe",
+      "status": "skipped",
+      "duration": 239.01789999999164,
+      "timestamp": "2026-02-09T06:57:56.354Z"
+    },
+    {
+      "taskName": "task-065-html-element",
+      "status": "skipped",
+      "duration": 158.89420000000973,
+      "timestamp": "2026-02-09T06:57:56.515Z"
+    },
+    {
+      "taskName": "task-066-html-text",
+      "status": "skipped",
+      "duration": 183.60980000000563,
+      "timestamp": "2026-02-09T06:57:56.700Z"
+    },
+    {
+      "taskName": "task-067-html-links",
+      "status": "skipped",
+      "duration": 252.00190000000293,
+      "timestamp": "2026-02-09T06:57:56.954Z"
+    },
+    {
+      "taskName": "task-068-glob-match",
+      "status": "skipped",
+      "duration": 202.24109999999928,
+      "timestamp": "2026-02-09T06:57:57.158Z"
+    },
+    {
+      "taskName": "task-070-worker-message",
+      "status": "skipped",
+      "duration": 323.1886999999988,
+      "timestamp": "2026-02-09T06:57:57.861Z"
+    },
+    {
+      "taskName": "task-071-worker-error",
+      "status": "skipped",
+      "duration": 422.4823000000033,
+      "timestamp": "2026-02-09T06:57:58.286Z"
+    },
+    {
+      "taskName": "task-072-worker-terminate",
+      "status": "skipped",
+      "duration": 2037.0936999999976,
+      "timestamp": "2026-02-09T06:58:00.325Z"
+    },
+    {
+      "taskName": "task-073-cookie-parse",
+      "status": "skipped",
+      "duration": 170.13300000000163,
+      "timestamp": "2026-02-09T06:58:00.497Z"
+    },
+    {
+      "taskName": "task-074-cookie-set",
+      "status": "skipped",
+      "duration": 158.53670000001148,
+      "timestamp": "2026-02-09T06:58:00.658Z"
+    },
+    {
+      "taskName": "task-075-semver-compare",
+      "status": "skipped",
+      "duration": 209.09260000000359,
+      "timestamp": "2026-02-09T06:58:00.868Z"
+    },
+    {
+      "taskName": "task-076-semver-range",
+      "status": "skipped",
+      "duration": 158.70119999999588,
+      "timestamp": "2026-02-09T06:58:01.029Z"
+    },
+    {
+      "taskName": "task-013-spawn-stdout",
+      "status": "fail",
+      "duration": 307.5458,
+      "timestamp": "2026-02-09T07:23:28.670Z",
+      "error": "test\\runner.test.ts:\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:12:26)\n(fail) runCommand > should capture echo output\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"printf\"\n  path: \"printf\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:19:26)\n(fail) runCommand > should capture multi-line output\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:28:26)\n(fail) runCommand > should capture command output with arguments\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"pwd\"\n  path: \"pwd\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:35:26)\n(fail) runCommand > should capture output from pwd\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"ls\"\n  path: \"ls\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:42:26)\n(fail) runCommand > should capture ls output [16.00ms]\n32 |  * @returns Object with stdout and stderr strings\n33 |  *\n34 |  * FIX: Read both streams properly.\n35 |  */\n36 | export async function runCommandWithStderr(cmd: string[]): Promise<{ stdout: string; stderr: string }> {\n37 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommandWithStderr (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:37:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:51:30)\n(fail) runCommandWithStderr > should capture stdout [32.00ms]\n32 |  * @returns Object with stdout and stderr strings\n33 |  *\n34 |  * FIX: Read both streams properly.\n35 |  */\n36 | export async function runCommandWithStderr(cmd: string[]): Promise<{ stdout: string; stderr: string }> {\n37 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"ls\"\n  path: \"ls\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommandWithStderr (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:37:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:59:30)\n(fail) runCommandWithStderr > should capture stderr from failing command\n32 |  * @returns Object with stdout and stderr strings\n33 |  *\n34 |  * FIX: Read both streams properly.\n35 |  */\n36 | export async function runCommandWithStderr(cmd: string[]): Promise<{ stdout: string; stderr: string }> {\n37 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"sh\"\n  path: \"sh\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommandWithStderr (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:37:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:67:38)\n(fail) runCommandWithStderr > should capture both stdout and stderr [15.00ms]\n52 |  *\n53 |  * @param cmd - Array of command and arguments\n54 |  * @returns Array of output lines\n55 |  */\n56 | export async function runCommandLines(cmd: string[]): Promise<string[]> {\n57 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"printf\"\n  path: \"printf\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommandLines (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:57:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:81:25)\n(fail) runCommandLines > should return array of lines\n52 |  *\n53 |  * @param cmd - Array of command and arguments\n54 |  * @returns Array of output lines\n55 |  */\n56 | export async function runCommandLines(cmd: string[]): Promise<string[]> {\n57 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommandLines (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:57:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:89:25)\n(fail) runCommandLines > should handle single line output\n71 |  *\n72 |  * @param cmd - Array of command and arguments\n73 |  * @returns True if the command produced non-empty output\n74 |  */\n75 | export async function hasOutput(cmd: string[]): Promise<boolean> {\n76 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at hasOutput (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:76:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:98:26)\n(fail) hasOutput > should return true for command with output [16.00ms]\n71 |  *\n72 |  * @param cmd - Array of command and arguments\n73 |  * @returns True if the command produced non-empty output\n74 |  */\n75 | export async function hasOutput(cmd: string[]): Promise<boolean> {\n76 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"true\"\n  path: \"true\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at hasOutput (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:76:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:107:26)\n(fail) hasOutput > should return false for command with no output\n71 |  *\n72 |  * @param cmd - Array of command and arguments\n73 |  * @returns True if the command produced non-empty output\n74 |  */\n75 | export async function hasOutput(cmd: string[]): Promise<boolean> {\n76 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"printf\"\n  path: \"printf\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at hasOutput (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:76:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:116:26)\n(fail) hasOutput > should detect actual content, not just stream existence\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at map (1:11)\n      at runMultipleCommands (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:93:46)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:125:27)\n(fail) runMultipleCommands > should capture output from multiple commands [16.00ms]\n11 |  * @returns The stdout output as a string\n12 |  *\n13 |  * FIX: Read the stdout stream using Bun.readableStreamToText()\n14 |  */\n15 | export async function runCommand(cmd: string[]): Promise<string> {\n16 |   const proc = Bun.spawn(cmd);\n                        ^\nerror: Executable not found in $PATH: \"echo\"\n  path: \"echo\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runCommand (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:16:20)\n      at map (1:11)\n      at runMultipleCommands (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\src\\runner.ts:93:46)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-013-spawn-stdout\\test\\runner.test.ts:138:27)\n(fail) runMultipleCommands > should return correct number of outputs\n\n 0 pass\n 15 fail\nRan 15 tests across 1 file. [191.00ms]"
+    },
+    {
+      "taskName": "task-014-spawn-exitcode",
+      "status": "fail",
+      "duration": 214.42219999999998,
+      "timestamp": "2026-02-09T07:23:28.886Z",
+      "error": "test\\executor.test.ts:\n11 | describe(\"runCommandSafe\", () => {\n12 |   test(\"should return true for successful command\", async () => {\n13 |     const result = await runCommandSafe([\"true\"]); // 'true' command always exits 0\n14 | \n15 |     // This might pass by accident since we always return true\n16 |     expect(result).toBe(true);\n                        ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:16:20)\n(fail) runCommandSafe > should return true for successful command\n(pass) runCommandSafe > should return false for failing command\n(pass) runCommandSafe > should return false for non-existent command\n(pass) runCommandSafe > should detect exit code 2 [16.00ms]\n40 | });\n41 | \n42 | describe(\"runCommandOrThrow\", () => {\n43 |   test(\"should not throw for successful command\", async () => {\n44 |     // This should not throw\n45 |     await expect(runCommandOrThrow([\"true\"])).resolves.toBeUndefined();\n                                                            ^\nerror: \n\nExpected promise that resolves\nReceived promise that rejected: Promise { <rejected> }\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:45:56)\n(fail) runCommandOrThrow > should not throw for successful command\n(pass) runCommandOrThrow > should throw for failing command\n(pass) runCommandOrThrow > should throw for non-existent command\n(pass) runCommandOrThrow > should throw with meaningful error message [16.00ms]\n70 | describe(\"getExitCode\", () => {\n71 |   test(\"should return 0 for successful command\", async () => {\n72 |     const code = await getExitCode([\"true\"]);\n73 | \n74 |     // This test will FAIL - exitCode is null before process completes\n75 |     expect(code).toBe(0);\n                      ^\nerror: expect(received).toBe(expected)\n\nExpected: 0\nReceived: -1\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:75:18)\n(fail) getExitCode > should return 0 for successful command\n77 | \n78 |   test(\"should return 1 for failing command\", async () => {\n79 |     const code = await getExitCode([\"false\"]);\n80 | \n81 |     // This test will FAIL\n82 |     expect(code).toBe(1);\n                      ^\nerror: expect(received).toBe(expected)\n\nExpected: 1\nReceived: -1\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:82:18)\n(fail) getExitCode > should return 1 for failing command\n84 | \n85 |   test(\"should return correct exit code for custom exit\", async () => {\n86 |     const code = await getExitCode([\"sh\", \"-c\", \"exit 42\"]);\n87 | \n88 |     // This test will FAIL\n89 |     expect(code).toBe(42);\n                      ^\nerror: expect(received).toBe(expected)\n\nExpected: 42\nReceived: -1\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:89:18)\n(fail) getExitCode > should return correct exit code for custom exit\n(pass) getExitCode > should return number type\n85 |  * @param cmd - Array of command and arguments\n86 |  * @param timeoutMs - Maximum time to wait in milliseconds\n87 |  * @returns True if command succeeded within timeout\n88 |  */\n89 | export async function runWithTimeout(cmd: string[], timeoutMs: number): Promise<boolean> {\n90 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"true\"\n  path: \"true\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runWithTimeout (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:90:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:102:26)\n(fail) runWithTimeout > should return true for fast successful command [15.00ms]\n85 |  * @param cmd - Array of command and arguments\n86 |  * @param timeoutMs - Maximum time to wait in milliseconds\n87 |  * @returns True if command succeeded within timeout\n88 |  */\n89 | export async function runWithTimeout(cmd: string[], timeoutMs: number): Promise<boolean> {\n90 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"false\"\n  path: \"false\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runWithTimeout (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:90:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:108:26)\n(fail) runWithTimeout > should return false for fast failing command\n85 |  * @param cmd - Array of command and arguments\n86 |  * @param timeoutMs - Maximum time to wait in milliseconds\n87 |  * @returns True if command succeeded within timeout\n88 |  */\n89 | export async function runWithTimeout(cmd: string[], timeoutMs: number): Promise<boolean> {\n90 |   const proc = Bun.spawn(cmd, {\n                        ^\nerror: Executable not found in $PATH: \"sleep\"\n  path: \"sleep\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runWithTimeout (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:90:20)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:115:26)\n(fail) runWithTimeout > should handle command that completes within timeout\n113 |  * @param commands - Array of command arrays\n114 |  * @returns True if all commands succeeded\n115 |  */\n116 | export async function runSequence(commands: string[][]): Promise<boolean> {\n117 |   for (const cmd of commands) {\n118 |     const proc = Bun.spawn(cmd, {\n                           ^\nerror: Executable not found in $PATH: \"true\"\n  path: \"true\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runSequence (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:118:22)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:124:26)\n(fail) runSequence > should return true when all commands succeed\n113 |  * @param commands - Array of command arrays\n114 |  * @returns True if all commands succeeded\n115 |  */\n116 | export async function runSequence(commands: string[][]): Promise<boolean> {\n117 |   for (const cmd of commands) {\n118 |     const proc = Bun.spawn(cmd, {\n                           ^\nerror: Executable not found in $PATH: \"false\"\n  path: \"false\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runSequence (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:118:22)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:131:26)\n(fail) runSequence > should return false when first command fails\n113 |  * @param commands - Array of command arrays\n114 |  * @returns True if all commands succeeded\n115 |  */\n116 | export async function runSequence(commands: string[][]): Promise<boolean> {\n117 |   for (const cmd of commands) {\n118 |     const proc = Bun.spawn(cmd, {\n                           ^\nerror: Executable not found in $PATH: \"true\"\n  path: \"true\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runSequence (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:118:22)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:138:26)\n(fail) runSequence > should return false when middle command fails [16.00ms]\n113 |  * @param commands - Array of command arrays\n114 |  * @returns True if all commands succeeded\n115 |  */\n116 | export async function runSequence(commands: string[][]): Promise<boolean> {\n117 |   for (const cmd of commands) {\n118 |     const proc = Bun.spawn(cmd, {\n                           ^\nerror: Executable not found in $PATH: \"true\"\n  path: \"true\",\n errno: -4058,\n  code: \"ENOENT\"\n\n      at runSequence (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\src\\executor.ts:118:22)\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:145:26)\n(fail) runSequence > should return false when last command fails\n151 | \n152 | describe(\"runCommandDetailed\", () => {\n153 |   test(\"should return success=true for successful command\", async () => {\n154 |     const result = await runCommandDetailed([\"true\"]);\n155 | \n156 |     expect(result.success).toBe(true);\n                                 ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:156:28)\n(fail) runCommandDetailed > should return success=true for successful command\n(pass) runCommandDetailed > should return success=false for failing command\n165 | \n166 |   test(\"should return correct exit code\", async () => {\n167 |     const result = await runCommandDetailed([\"sh\", \"-c\", \"exit 5\"]);\n168 | \n169 |     // This test will FAIL\n170 |     expect(result.exitCode).toBe(5);\n                                  ^\nerror: expect(received).toBe(expected)\n\nExpected: 5\nReceived: -1\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:170:29)\n(fail) runCommandDetailed > should return correct exit code\n172 | \n173 |   test(\"should measure actual duration\", async () => {\n174 |     const result = await runCommandDetailed([\"sleep\", \"0.1\"]);\n175 | \n176 |     // This test will FAIL - duration doesn't include actual execution time\n177 |     expect(result.duration).toBeGreaterThanOrEqual(100);\n                                  ^\nerror: expect(received).toBeGreaterThanOrEqual(expected)\n\nExpected: >= 100\nReceived: 3\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-014-spawn-exitcode\\test\\executor.test.ts:177:29)\n(fail) runCommandDetailed > should measure actual duration [16.00ms]\n(pass) runCommandDetailed > should return all fields with correct types\n\n 9 pass\n 15 fail\n 18 expect() calls\nRan 24 tests across 1 file. [136.00ms]"
+    },
+    {
+      "taskName": "task-016-test-async",
+      "status": "fail",
+      "duration": 160.61619999999994,
+      "timestamp": "2026-02-09T07:23:29.049Z",
+      "error": "test\\api.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/api' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-016-test-async\\test\\api.test.ts'\n-------------------------------\n\n\nsolution\\api.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/api' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-016-test-async\\solution\\api.test.ts'\n-------------------------------\n\n\nsrc\\api.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/api' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-016-test-async\\src\\api.test.ts'\n-------------------------------\n\n\n 0 pass\n 3 fail\n 3 errors\nRan 3 tests across 3 files. [80.00ms]"
+    },
+    {
+      "taskName": "task-017-mock-cleanup",
+      "status": "fail",
+      "duration": 177.27319999999997,
+      "timestamp": "2026-02-09T07:23:29.228Z",
+      "error": "test\\service.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/service' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-017-mock-cleanup\\test\\service.test.ts'\n-------------------------------\n\n\nsolution\\service.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/service' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-017-mock-cleanup\\solution\\service.test.ts'\n-------------------------------\n\n\nsrc\\service.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/service' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-017-mock-cleanup\\src\\service.test.ts'\n-------------------------------\n\n\n 0 pass\n 3 fail\n 3 errors\nRan 3 tests across 3 files. [95.00ms]"
+    },
+    {
+      "taskName": "task-018-expect-type",
+      "status": "fail",
+      "duration": 179.8510000000001,
+      "timestamp": "2026-02-09T07:23:29.410Z",
+      "error": "test\\validators.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/validators' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-018-expect-type\\test\\validators.test.ts'\n-------------------------------\n\n\nsolution\\validators.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/validators' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-018-expect-type\\solution\\validators.test.ts'\n-------------------------------\n\n\nsrc\\validators.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/validators' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-018-expect-type\\src\\validators.test.ts'\n-------------------------------\n\n\n 0 pass\n 3 fail\n 3 errors\nRan 3 tests across 3 files. [102.00ms]"
+    },
+    {
+      "taskName": "task-019-test-timeout",
+      "status": "fail",
+      "duration": 159.57909999999993,
+      "timestamp": "2026-02-09T07:23:29.571Z",
+      "error": "test\\operations.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/operations' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-019-test-timeout\\test\\operations.test.ts'\n-------------------------------\n\n\nsolution\\operations.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/operations' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-019-test-timeout\\solution\\operations.test.ts'\n-------------------------------\n\n\nsrc\\operations.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/operations' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-019-test-timeout\\src\\operations.test.ts'\n-------------------------------\n\n\n 0 pass\n 3 fail\n 3 errors\nRan 3 tests across 3 files. [90.00ms]"
+    },
+    {
+      "taskName": "task-020-describe-scope",
+      "status": "fail",
+      "duration": 168.7532000000001,
+      "timestamp": "2026-02-09T07:23:29.741Z",
+      "error": "test\\cart.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/cart' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-020-describe-scope\\test\\cart.test.ts'\n-------------------------------\n\n\nsolution\\cart.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/cart' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-020-describe-scope\\solution\\cart.test.ts'\n-------------------------------\n\n\nsrc\\cart.test.ts:\n\n# Unhandled error between tests\n-------------------------------\nerror: Cannot find module '../src/cart' from 'C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-020-describe-scope\\src\\cart.test.ts'\n-------------------------------\n\n\n 0 pass\n 3 fail\n 3 errors\nRan 3 tests across 3 files. [95.00ms]"
+    },
+    {
+      "taskName": "task-031-build-entry",
+      "status": "fail",
+      "duration": 144.2421999999999,
+      "timestamp": "2026-02-09T07:23:29.890Z",
+      "error": "test\\build.test.ts:\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\main.ts\" (entry point)\n\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\worker.ts\" (entry point)\n(fail) Bun.build() Entry Points > should build successfully\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\main.ts\" (entry point)\n\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\worker.ts\" (entry point)\n(fail) Bun.build() Entry Points > should generate main.js output\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\main.ts\" (entry point)\n\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\worker.ts\" (entry point)\n(fail) Bun.build() Entry Points > should generate worker.js output\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\main.ts\" (entry point)\n\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\worker.ts\" (entry point)\n(fail) Bun.build() Entry Points > should have exactly 2 output files [16.00ms]\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\main.ts\" (entry point)\n\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-031-build-entry\\src\\worker.ts\" (entry point)\n(fail) Bun.build() Entry Points > both output files should exist on disk\n\n 0 pass\n 5 fail\nRan 5 tests across 1 file. [73.00ms]"
+    },
+    {
+      "taskName": "task-032-build-external",
+      "status": "fail",
+      "duration": 227.74350000000004,
+      "timestamp": "2026-02-09T07:23:30.119Z",
+      "error": "test\\build.test.ts:\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-032-build-external\\src\\index.ts\" (entry point)\n(fail) Bun.build() External Dependencies > should build successfully with external config [15.00ms]\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-032-build-external\\src\\index.ts\" (entry point)\n(fail) Bun.build() External Dependencies > should generate output file\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-032-build-external\\src\\index.ts\" (entry point)\n(fail) Bun.build() External Dependencies > bundle should preserve lodash import as external\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-032-build-external\\src\\index.ts\" (entry point)\n(fail) Bun.build() External Dependencies > bundle should preserve axios import as external\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-032-build-external\\src\\index.ts\" (entry point)\n(fail) Bun.build() External Dependencies > bundle size should be small when externals are excluded\n\n 0 pass\n 5 fail\nRan 5 tests across 1 file. [147.00ms]"
+    },
+    {
+      "taskName": "task-033-build-outdir",
+      "status": "fail",
+      "duration": 158.13380000000006,
+      "timestamp": "2026-02-09T07:23:30.279Z",
+      "error": "test\\build.test.ts:\n33 |     }\n34 |   });\n35 | \n36 |   test(\"should build successfully\", async () => {\n37 |     const result = await buildApp();\n38 |     expect(result.success).toBe(true);\n                                ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-033-build-outdir\\test\\build.test.ts:38:28)\n(fail) Bun.build() Output Directory > should build successfully [16.00ms]\n44 |     const expectedDir = getExpectedDirectory();\n45 | \n46 |     // The expected directory should exist at dist/v1\n47 |     const dirExists = await exists(expectedDir);\n48 |     // This will FAIL because output goes to src/dist/version-1 instead\n49 |     expect(dirExists).toBe(true);\n                           ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-033-build-outdir\\test\\build.test.ts:49:23)\n(fail) Bun.build() Output Directory > output should be in expected versioned directory\n54 |     const expectedPath = getExpectedOutputPath();\n55 | \n56 |     // The file should exist at dist/v1/app.js\n57 |     const fileExists = await exists(expectedPath);\n58 |     // This will FAIL because file is at src/dist/version-1/app.js\n59 |     expect(fileExists).toBe(true);\n                            ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-033-build-outdir\\test\\build.test.ts:59:24)\n(fail) Bun.build() Output Directory > output file should exist at expected path\n(pass) Bun.build() Output Directory > expected path should match actual path\n72 |     const result = await buildApp();\n73 | \n74 |     // Should use \"v1\" format, not \"version-1\"\n75 |     const usesCorrectFormat = result.outdir.includes(\"/v1\");\n76 |     // This will FAIL because it uses \"version-1\" instead\n77 |     expect(usesCorrectFormat).toBe(true);\n                                   ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-033-build-outdir\\test\\build.test.ts:77:31)\n(fail) Bun.build() Output Directory > output directory should use correct version format\n(pass) Bun.build() Output Directory > output should not be nested in src directory\n 96 |     if (canLoad) {\n 97 |       const bundle = await import(expectedPath);\n 98 |       expect(bundle).toBeDefined();\n 99 |     } else {\n100 |       // This will FAIL because file is not at expected location\n101 |       expect(canLoad).toBe(true);\n                            ^\nerror: expect(received).toBe(expected)\n\nExpected: true\nReceived: false\n\n      at <anonymous> (C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-033-build-outdir\\test\\build.test.ts:101:23)\n(fail) Bun.build() Output Directory > application should be able to load bundle from expected path\n\n 2 pass\n 5 fail\n 7 expect() calls\nRan 7 tests across 1 file. [75.00ms]"
+    },
+    {
+      "taskName": "task-034-build-minify",
+      "status": "fail",
+      "duration": 154.80679999999984,
+      "timestamp": "2026-02-09T07:23:30.435Z",
+      "error": "test\\build.test.ts:\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > should build successfully [16.00ms]\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > output should be minified\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > should generate sourcemap file\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > sourcemap should exist alongside JS file\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > minified output should have debug reference for sourcemap\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > sourcemap should contain original source mapping\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-034-build-minify\\src\\utils.ts\" (entry point)\n(fail) Bun.build() Minify with Sourcemaps > build result should indicate sourcemap generation [15.00ms]\n\n 0 pass\n 7 fail\nRan 7 tests across 1 file. [82.00ms]"
+    },
+    {
+      "taskName": "task-035-build-target",
+      "status": "fail",
+      "duration": 157.68110000000024,
+      "timestamp": "2026-02-09T07:23:30.595Z",
+      "error": "test\\build.test.ts:\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > should build successfully\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > should have correct target set to bun\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundle should preserve Bun.file API calls\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundle should preserve Bun.serve API calls [16.00ms]\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundle should preserve Bun.version reference\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundle should preserve Bun.password API\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundle should be executable with Bun runtime [16.00ms]\nerror: ModuleNotFound resolving \"C:\\Users\\dev\\Documents\\GitHub\\bun-bench-tasks\\tasks\\task-035-build-target\\src\\server.ts\" (entry point)\n(fail) Bun.build() Target Configuration > bundled readConfigFile should work with Bun.file\n\n 0 pass\n 8 fail\nRan 8 tests across 1 file. [79.00ms]"
+    }
+  ],
+  "endTime": "2026-02-09T07:23:30.596Z",
+  "totalDuration": 2247
+}
