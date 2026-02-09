@@ -11,6 +11,31 @@ This repository contains **80 controlled benchmark tasks** with:
 
 Each task tests understanding of specific Bun APIs and common programming patterns.
 
+## Setup for Open Router
+
+To use Open Router models with this project:
+
+1. **Get an API Key**: Sign up at [openrouter.ai](https://openrouter.ai) and create an API key
+
+2. **Configure Environment**:
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env and add your Open Router API key
+   OPENROUTER_API_KEY=your_key_here
+   ```
+
+3. **Optional - Claude API Compatibility Mode**:
+   If you want to use Claude models via Open Router with Claude API compatibility:
+   ```bash
+   # In .env, set:
+   ANTHROPIC_AUTH_TOKEN=your_openrouter_api_key
+   ANTHROPIC_BASE_URL=https://openrouter.ai/api/v1
+   ```
+
+4. **Load Environment**: The Bun runtime will automatically load variables from `.env` file
+
 ## Task Categories
 
 | Category | Tasks | APIs Covered |
