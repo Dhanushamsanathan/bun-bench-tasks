@@ -127,7 +127,14 @@ async function runTests(taskDir: string): Promise<{ passed: boolean; duration: n
 async function evaluateTask(taskName: string): Promise<EvaluationResult | null> {
   const taskDir = join(tasksDir, taskName);
   const inferenceFile = join(taskDir, "inference-response.json");
+  const evalResultFile = join(taskDir, "evaluation-result.json");
   const srcBakDir = join(taskDir, "src.eval-bak");
+
+  // Skip if evaluation already exists
+  if (existsSync(evalResultFile)) {
+    console.log(`  ⏭️  Skipping (evaluation-result.json already exists)`);
+    return null;
+  }
 
   if (!existsSync(inferenceFile)) {
     console.log(`  ⚠️  No inference-response.json found`);

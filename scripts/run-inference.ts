@@ -135,6 +135,13 @@ async function runInference(taskName: string): Promise<InferenceResponse | null>
   const taskDir = join(tasksDir, taskName);
   const readmeFile = join(taskDir, "README.md");
   const srcDir = join(taskDir, "src");
+  const inferenceFile = join(taskDir, "inference-response.json");
+
+  // Skip if inference already exists
+  if (existsSync(inferenceFile)) {
+    console.log(`  ⏭️  Skipping (inference-response.json already exists)`);
+    return null;
+  }
 
   if (!existsSync(readmeFile)) {
     console.log(`  ⚠️  No README.md found`);
