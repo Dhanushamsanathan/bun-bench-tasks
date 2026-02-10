@@ -4,7 +4,7 @@
  * Run bun test and record pass/fail
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync, mkdirSync, copyFileSync } from "fs";
 import { join } from "path";
 import { $ } from "bun";
 
@@ -156,11 +156,20 @@ async function evaluateTask(taskName: string): Promise<EvaluationResult | null> 
       if (existsSync(srcBakDir)) {
         rmSync(srcBakDir, { recursive: true, force: true });
       }
-      await $`mv ${srcDir} ${srcBakDir}`.nothrow();
+      // Use Node.js rename instead of shell mv
+      rmSync(srcBakDir, { recursive: true, force: true });
+      readdirSync(srcDir).forEach(file => {
+        const srcPath = join(srcDir, file);
+        const destPath = join(srcBakDir, file);
+        mkdirSync(join(destPath, ".."), { recursive: true });
+        if (existsSync(srcPath)) {
+          copyFileSync(srcPath, destPath);
+        }
+      });
     }
 
     // Create fresh src dir
-    await $`mkdir -p ${srcDir}`.nothrow();
+    mkdirSync(srcDir, { recursive: true });
 
     // Copy original files back first (to preserve non-modified files)
     if (existsSync(srcBakDir)) {
@@ -168,7 +177,7 @@ async function evaluateTask(taskName: string): Promise<EvaluationResult | null> 
       for (const file of origFiles) {
         const src = join(srcBakDir, file);
         const dest = join(srcDir, file);
-        await $`cp -r ${src} ${dest}`.nothrow();
+        copyFileSync(src, dest);
       }
     }
 
@@ -180,25 +189,45 @@ async function evaluateTask(taskName: string): Promise<EvaluationResult | null> 
     console.log(`  🧪 Running tests...`);
     const testResult = await runTests(taskDir);
 
-    // Restore original src
-    if (existsSync(srcBakDir)) {
-      rmSync(srcDir, { recursive: true, force: true });
-      await $`mv ${srcBakDir} ${srcDir}`.nothrow();
-    }
-
-    return {
+    const result = {
       taskName,
       passed: testResult.passed,
       duration: testResult.duration,
       timestamp: new Date().toISOString(),
       error: testResult.error,
     };
+
+    // Save evaluation result to file
+    const evalResultFile = join(taskDir, "evaluation-result.json");
+    writeFileSync(evalResultFile, JSON.stringify(result, null, 2), "utf-8");
+
+    // Restore original src
+    if (existsSync(srcBakDir)) {
+      rmSync(srcDir, { recursive: true, force: true });
+      // Copy back from backup
+      readdirSync(srcBakDir).forEach(file => {
+        const srcPath = join(srcBakDir, file);
+        const destPath = join(srcDir, file);
+        mkdirSync(join(destPath, ".."), { recursive: true });
+        copyFileSync(srcPath, destPath);
+      });
+      rmSync(srcBakDir, { recursive: true, force: true });
+    }
+
+    return result;
   } catch (error) {
     // Clean up on error
     if (existsSync(srcBakDir)) {
       const srcDir = join(taskDir, "src");
       rmSync(srcDir, { recursive: true, force: true });
-      $`mv ${srcBakDir} ${srcDir}`.nothrow();
+      // Copy back from backup
+      readdirSync(srcBakDir).forEach(file => {
+        const srcPath = join(srcBakDir, file);
+        const destPath = join(srcDir, file);
+        mkdirSync(join(destPath, ".."), { recursive: true });
+        copyFileSync(srcPath, destPath);
+      });
+      rmSync(srcBakDir, { recursive: true, force: true });
     }
 
     console.log(`  ❌ Error: ${error}`);

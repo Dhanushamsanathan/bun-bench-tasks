@@ -19,6 +19,7 @@ interface InferenceResponse {
   taskName: string;
   model: string;
   timestamp: string;
+  inferenceDuration: number;
   prompt: string;
   response: string;
   fixedCode?: string;
@@ -114,7 +115,7 @@ async function callOpenRouter(prompt: string): Promise<string> {
         },
       ],
       temperature: 0.7,
-      max_tokens: 8000,
+      max_tokens: 2000,  // Reduced to work with limited credits
     }),
   });
 
@@ -151,10 +152,13 @@ async function runInference(taskName: string): Promise<InferenceResponse | null>
 
   const prompt = buildPrompt(taskName, readme, buggyCode);
 
-  // Call OpenRouter
+  // Call OpenRouter and measure duration
   let response: string;
+  let inferenceDuration: number;
   try {
+    const startTime = performance.now();
     response = await callOpenRouter(prompt);
+    inferenceDuration = performance.now() - startTime;
   } catch (error) {
     console.error(`  ❌ API call failed: ${error}`);
     return null;
@@ -164,6 +168,7 @@ async function runInference(taskName: string): Promise<InferenceResponse | null>
     taskName,
     model: Bun.env.OPENROUTER_MODEL || "unknown",
     timestamp: new Date().toISOString(),
+    inferenceDuration,
     prompt: prompt.substring(0, 500) + "...", // Store truncated prompt for reference
     response,
   };
@@ -171,7 +176,7 @@ async function runInference(taskName: string): Promise<InferenceResponse | null>
   // Save response
   const responseFile = join(taskDir, "inference-response.json");
   writeFileSync(responseFile, JSON.stringify(result, null, 2), "utf-8");
-  console.log(`  ✅ Saved to inference-response.json`);
+  console.log(`  ✅ Saved to inference-response.json (${inferenceDuration.toFixed(0)}ms)`);
 
   return result;
 }

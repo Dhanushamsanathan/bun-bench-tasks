@@ -14,7 +14,7 @@ const reportFile = join(import.meta.dir, "..", "benchmark-report.json");
 interface BenchmarkTask {
   taskName: string;
   hasInference: boolean;
-  inferenceTime?: number;
+  inferenceDuration?: number;
   evaluationPassed?: boolean;
   evaluationDuration?: number;
   evaluationError?: string;
@@ -57,8 +57,9 @@ async function runBenchmark(taskFilter?: string) {
   console.log(`${"=".repeat(70)}`);
   const inferenceCmd = `bun run scripts/run-inference.ts ${tasksToRun.join(" ")}`;
   console.log(`Running: ${inferenceCmd}\n`);
-  
-  const inferenceResult = await $`bun run scripts/run-inference.ts ${tasksToRun.join(" ")}`.nothrow();
+
+  // Spread array to pass each task as separate argument
+  const inferenceResult = await $`bun run scripts/run-inference.ts ${tasksToRun}`.nothrow();
   if (inferenceResult.exitCode !== 0) {
     console.error("Inference failed!");
     console.error(inferenceResult.stderr.toString());
@@ -69,7 +70,8 @@ async function runBenchmark(taskFilter?: string) {
   const evalCmd = `bun run scripts/run-evaluation.ts ${tasksToRun.join(" ")}`;
   console.log(`Running: ${evalCmd}\n`);
 
-  const evalResult = await $`bun run scripts/run-evaluation.ts ${tasksToRun.join(" ")}`.nothrow();
+  // Spread array to pass each task as separate argument
+  const evalResult = await $`bun run scripts/run-evaluation.ts ${tasksToRun}`.nothrow();
   if (evalResult.exitCode !== 0) {
     console.error("Evaluation had failures (expected for buggy tasks)");
   }
@@ -99,6 +101,14 @@ async function runBenchmark(taskFilter?: string) {
 
     if (task.hasInference) {
       report.withInference++;
+
+      // Read inference duration from inference-response.json
+      try {
+        const inferenceData = JSON.parse(readFileSync(inferenceFile, "utf-8"));
+        task.inferenceDuration = inferenceData.inferenceDuration;
+      } catch (e) {
+        console.log(`  Warning: Could not parse ${inferenceFile}`);
+      }
 
       // Try to find evaluation result in task directory
       // (This would be saved by evaluation script)
@@ -131,17 +141,23 @@ async function runBenchmark(taskFilter?: string) {
   // Save report
   writeFileSync(reportFile, JSON.stringify(report, null, 2), "utf-8");
 
+  // Calculate total inference time
+  const totalInferenceTime = report.tasks
+    .filter(t => t.inferenceDuration)
+    .reduce((sum, t) => sum + (t.inferenceDuration || 0), 0);
+
   // Print summary
   console.log(`${"=".repeat(70)}`);
   console.log(`BENCHMARK SUMMARY`);
   console.log(`${"=".repeat(70)}`);
-  console.log(`Model:              ${report.model}`);
-  console.log(`Total Tasks:        ${report.totalTasks}`);
-  console.log(`With Inference:     ${report.withInference}`);
-  console.log(`Passed Evaluation:  ${report.passed} ✅`);
-  console.log(`Failed Evaluation:  ${report.failed} ❌`);
-  console.log(`Success Rate:       ${report.totalTasks > 0 ? ((report.passed / report.withInference) * 100).toFixed(1) : 0}%`);
-  console.log(`Total Duration:     ${((report.totalDuration || 0) / 1000).toFixed(1)}s`);
+  console.log(`Model:                ${report.model}`);
+  console.log(`Total Tasks:          ${report.totalTasks}`);
+  console.log(`With Inference:       ${report.withInference}`);
+  console.log(`Passed Evaluation:    ${report.passed} ✅`);
+  console.log(`Failed Evaluation:    ${report.failed} ❌`);
+  console.log(`Success Rate:         ${report.totalTasks > 0 ? ((report.passed / report.withInference) * 100).toFixed(1) : 0}%`);
+  console.log(`Total Inference Time: ${(totalInferenceTime / 1000).toFixed(1)}s`);
+  console.log(`Total Duration:       ${((report.totalDuration || 0) / 1000).toFixed(1)}s`);
   console.log(`${"=".repeat(70)}`);
   console.log(`\n📝 Full report saved to: ${reportFile}`);
 }
