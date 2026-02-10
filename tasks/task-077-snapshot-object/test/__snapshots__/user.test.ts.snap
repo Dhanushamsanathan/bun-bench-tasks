@@ -1,0 +1,75 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`createUser creates user with correct structure 1`] = `
+{
+  "createdAt": 2026-02-10T06:42:37.085Z,
+  "email": "john@example.com",
+  "id": "9f74aae5-a019-48ae-bf23-2385d529b885",
+  "metadata": {
+    "lastLogin": null,
+    "loginCount": 0,
+    "preferences": {
+      "notifications": true,
+      "theme": "light",
+    },
+  },
+  "name": "John Doe",
+  "role": "admin",
+  "updatedAt": 2026-02-10T06:42:37.085Z,
+}
+`;
+
+exports[`createUser creates user with default role 1`] = `
+{
+  "createdAt": 2026-02-10T06:42:37.086Z,
+  "email": "jane@example.com",
+  "id": "54532ed6-f136-4c24-ade5-8f7e9ed1e473",
+  "metadata": {
+    "lastLogin": null,
+    "loginCount": 0,
+    "preferences": {
+      "notifications": true,
+      "theme": "light",
+    },
+  },
+  "name": "Jane Smith",
+  "role": "user",
+  "updatedAt": 2026-02-10T06:42:37.086Z,
+}
+`;
+
+exports[`createUserProfile creates profile summary 1`] = `
+{
+  "displayName": "Test User",
+  "email": "test@example.com",
+  "memberSince": "2026-02-10T06:42:37.087Z",
+  "userId": "9326b27d-94fa-4865-bd30-c0d5648f0d44",
+}
+`;
+
+exports[`createAuditLog creates audit log entry 1`] = `
+{
+  "action": "LOGIN",
+  "details": {
+    "ip": "192.168.1.1",
+    "userAgent": "Mozilla/5.0",
+  },
+  "hash": "1770705757088-wnnht6xglb",
+  "id": "17c6242f-3ece-40f1-baf0-8ad208e43356",
+  "timestamp": 2026-02-10T06:42:37.088Z,
+  "userId": "user-123",
+}
+`;
+
+exports[`createAuditLog creates audit log for logout action 1`] = `
+{
+  "action": "LOGOUT",
+  "details": {
+    "reason": "user_initiated",
+  },
+  "hash": "1770705757088-rufe5m2lgm",
+  "id": "60aab820-185f-459e-8b23-9314737d95f3",
+  "timestamp": 2026-02-10T06:42:37.088Z,
+  "userId": "user-456",
+}
+`;

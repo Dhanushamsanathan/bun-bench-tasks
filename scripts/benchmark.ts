@@ -4,7 +4,7 @@
  * Runs inference → evaluation → generates final report
  */
 
-import { readFileSync, existsSync, readdirSync, writeFileSync } from "fs";
+import { readFileSync, existsSync, readdirSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
 import { $ } from "bun";
 
@@ -58,11 +58,17 @@ async function runBenchmark(taskFilter?: string) {
   const inferenceCmd = `bun run scripts/run-inference.ts ${tasksToRun.join(" ")}`;
   console.log(`Running: ${inferenceCmd}\n`);
 
-  // Spread array to pass each task as separate argument
+  // Spread array to pass each task as separate argument and save log
   const inferenceResult = await $`bun run scripts/run-inference.ts ${tasksToRun}`.nothrow();
+  const inferenceLog = `logs/step1-inference-${Date.now()}.txt`;
+
+  // Save inference log
+  mkdirSync("logs", { recursive: true });
+  writeFileSync(inferenceLog, inferenceResult.stdout.toString() + inferenceResult.stderr.toString(), "utf-8");
+  console.log(`\n✅ Inference log saved to: ${inferenceLog}\n`);
+
   if (inferenceResult.exitCode !== 0) {
-    console.error("Inference failed!");
-    console.error(inferenceResult.stderr.toString());
+    console.error("⚠️  Inference had some failures (check log)");
   }
 
   console.log(`\n📚 STEP 2: EVALUATION`);
@@ -70,10 +76,16 @@ async function runBenchmark(taskFilter?: string) {
   const evalCmd = `bun run scripts/run-evaluation.ts ${tasksToRun.join(" ")}`;
   console.log(`Running: ${evalCmd}\n`);
 
-  // Spread array to pass each task as separate argument
+  // Spread array to pass each task as separate argument and save log
   const evalResult = await $`bun run scripts/run-evaluation.ts ${tasksToRun}`.nothrow();
+  const evalLog = `logs/step2-evaluation-${Date.now()}.txt`;
+
+  // Save evaluation log
+  writeFileSync(evalLog, evalResult.stdout.toString() + evalResult.stderr.toString(), "utf-8");
+  console.log(`\n✅ Evaluation log saved to: ${evalLog}\n`);
+
   if (evalResult.exitCode !== 0) {
-    console.error("Evaluation had failures (expected for buggy tasks)");
+    console.error("⚠️  Evaluation had failures (expected for buggy tasks)");
   }
 
   // Step 3: Generate report
@@ -146,20 +158,29 @@ async function runBenchmark(taskFilter?: string) {
     .filter(t => t.inferenceDuration)
     .reduce((sum, t) => sum + (t.inferenceDuration || 0), 0);
 
+  // Generate summary text
+  const summaryText = `${"=".repeat(70)}
+BENCHMARK SUMMARY
+${"=".repeat(70)}
+Model:                ${report.model}
+Total Tasks:          ${report.totalTasks}
+With Inference:       ${report.withInference}
+Passed Evaluation:    ${report.passed} ✅
+Failed Evaluation:    ${report.failed} ❌
+Success Rate:         ${report.totalTasks > 0 ? ((report.passed / report.withInference) * 100).toFixed(1) : 0}%
+Total Inference Time: ${(totalInferenceTime / 1000).toFixed(1)}s
+Total Duration:       ${((report.totalDuration || 0) / 1000).toFixed(1)}s
+${"=".repeat(70)}
+`;
+
   // Print summary
-  console.log(`${"=".repeat(70)}`);
-  console.log(`BENCHMARK SUMMARY`);
-  console.log(`${"=".repeat(70)}`);
-  console.log(`Model:                ${report.model}`);
-  console.log(`Total Tasks:          ${report.totalTasks}`);
-  console.log(`With Inference:       ${report.withInference}`);
-  console.log(`Passed Evaluation:    ${report.passed} ✅`);
-  console.log(`Failed Evaluation:    ${report.failed} ❌`);
-  console.log(`Success Rate:         ${report.totalTasks > 0 ? ((report.passed / report.withInference) * 100).toFixed(1) : 0}%`);
-  console.log(`Total Inference Time: ${(totalInferenceTime / 1000).toFixed(1)}s`);
-  console.log(`Total Duration:       ${((report.totalDuration || 0) / 1000).toFixed(1)}s`);
-  console.log(`${"=".repeat(70)}`);
-  console.log(`\n📝 Full report saved to: ${reportFile}`);
+  console.log(summaryText);
+  console.log(`📝 Full report saved to: ${reportFile}`);
+
+  // Save step 3 log (report generation summary)
+  const reportLog = `logs/step3-report-${Date.now()}.txt`;
+  writeFileSync(reportLog, summaryText + `\nFull JSON report saved to: ${reportFile}\n`, "utf-8");
+  console.log(`📝 Report summary saved to: ${reportLog}`);
 }
 
 // Main

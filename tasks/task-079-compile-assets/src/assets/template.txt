@@ -1,7 +1,0 @@
-Welcome to {{appName}}!
-
-Version: {{version}}
-Status: Running
-
-This template was embedded in the compiled executable.
-If you can read this, asset embedding is working correctly.

@@ -115,7 +115,7 @@ async function callOpenRouter(prompt: string): Promise<string> {
         },
       ],
       temperature: 0.7,
-      max_tokens: 2000,  // Reduced to work with limited credits
+      max_tokens: 8000,
     }),
   });
 
