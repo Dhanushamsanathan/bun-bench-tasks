@@ -12,7 +12,10 @@
     "validate": "bun run scripts/validate-tasks.ts",
     "validate-results": "bun run scripts/validate-results.ts",
     "list": "ls -1 tasks/",
-    "benchmark": "bun run scripts/benchmark.ts",
+    "benchmark": "bun run scripts/run-benchmark.ts",
+    "benchmark:verbose": "bun run scripts/run-benchmark.ts --verbose",
+    "benchmark:prompt": "bun run scripts/run-benchmark.ts --show-prompt",
+    "view-prompts": "bun run scripts/view-prompts.ts",
     "inference": "bun run scripts/run-inference.ts",
     "evaluate": "bun run scripts/run-evaluation.ts",
     "report": "bun run scripts/generate-report.ts"
