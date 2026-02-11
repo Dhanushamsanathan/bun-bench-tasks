@@ -10,12 +10,26 @@ import { $ } from "bun";
 
 const tasksDir = join(import.meta.dir, "..", "tasks");
 
+type ErrorType =
+  | "none"
+  | "no_code_generated"
+  | "syntax_error"
+  | "type_error"
+  | "test_failure"
+  | "timeout"
+  | "runtime_error"
+  | "unknown";
+
 interface EvaluationResult {
   taskName: string;
   passed: boolean;
   duration: number;
   timestamp: string;
   error?: string;
+  errorType: ErrorType;
+  testsRun?: number;
+  testsPassed?: number;
+  testsFailed?: number;
 }
 
 /**
@@ -97,26 +111,110 @@ function applyFixes(taskDir: string, fixes: { [filename: string]: string }): voi
 }
 
 /**
+ * Categorize error from test output
+ */
+function categorizeError(errorOutput?: string, hasTests: boolean = true): ErrorType {
+  if (!errorOutput) return "none";
+
+  const output = errorOutput.toLowerCase();
+
+  // No code generated
+  if (!hasTests) {
+    return "no_code_generated";
+  }
+
+  // Timeout
+  if (output.includes("timeout") || output.includes("timed out")) {
+    return "timeout";
+  }
+
+  // Syntax errors
+  if (output.includes("syntaxerror") || output.includes("syntax error")) {
+    return "syntax_error";
+  }
+
+  // Type errors
+  if (output.includes("typeerror") || output.includes("type error")) {
+    return "type_error";
+  }
+
+  // Test failures (has "fail" or "assert" but not syntax/type errors)
+  if (output.includes("fail") || output.includes("assert") || output.includes("expect")) {
+    return "test_failure";
+  }
+
+  // Runtime errors
+  if (output.includes("referenceerror") || output.includes("error:")) {
+    return "runtime_error";
+  }
+
+  return "unknown";
+}
+
+/**
+ * Parse test output to extract test counts
+ */
+function parseTestOutput(output: string): { testsRun: number; testsPassed: number; testsFailed: number } {
+  const lines = output.split("\n");
+
+  let testsRun = 0;
+  let testsPassed = 0;
+  let testsFailed = 0;
+
+  for (const line of lines) {
+    // Match patterns like "5 pass" or "3 fail"
+    const passMatch = line.match(/(\d+)\s+pass/);
+    const failMatch = line.match(/(\d+)\s+fail/);
+
+    if (passMatch) testsPassed += parseInt(passMatch[1]);
+    if (failMatch) testsFailed += parseInt(failMatch[1]);
+  }
+
+  testsRun = testsPassed + testsFailed;
+
+  return { testsRun, testsPassed, testsFailed };
+}
+
+/**
  * Run tests for a task
  */
-async function runTests(taskDir: string): Promise<{ passed: boolean; duration: number; error?: string }> {
+async function runTests(taskDir: string): Promise<{
+  passed: boolean;
+  duration: number;
+  error?: string;
+  errorType: ErrorType;
+  testsRun?: number;
+  testsPassed?: number;
+  testsFailed?: number;
+}> {
   const startTime = performance.now();
 
   try {
     const result = await $`cd ${taskDir} && bun test`.nothrow();
     const duration = performance.now() - startTime;
+    const stderr = result.stderr.toString();
+    const stdout = result.stdout.toString();
+    const output = stderr + stdout;
+
+    const errorType = categorizeError(result.exitCode !== 0 ? output : undefined, true);
+    const testCounts = parseTestOutput(output);
 
     return {
       passed: result.exitCode === 0,
       duration,
-      error: result.exitCode === 0 ? undefined : result.stderr.toString().trim(),
+      error: result.exitCode === 0 ? undefined : output.trim().substring(0, 500),
+      errorType,
+      ...testCounts,
     };
   } catch (error) {
     const duration = performance.now() - startTime;
+    const errorType = categorizeError(String(error), true);
+
     return {
       passed: false,
       duration,
-      error: String(error),
+      error: String(error).substring(0, 500),
+      errorType,
     };
   }
 }
@@ -152,7 +250,18 @@ async function evaluateTask(taskName: string): Promise<EvaluationResult | null> 
 
     if (Object.keys(fixes).length === 0) {
       console.log(`  ⚠️  No fixed code blocks found in response`);
-      return null;
+
+      // Save evaluation result for no-code case
+      const result: EvaluationResult = {
+        taskName,
+        passed: false,
+        duration: 0,
+        timestamp: new Date().toISOString(),
+        error: "No code generated",
+        errorType: "no_code_generated",
+      };
+      writeFileSync(evalResultFile, JSON.stringify(result, null, 2), "utf-8");
+      return result;
     }
 
     console.log(`  📝 Found ${Object.keys(fixes).length} file(s) to fix`);
@@ -196,16 +305,19 @@ async function evaluateTask(taskName: string): Promise<EvaluationResult | null> 
     console.log(`  🧪 Running tests...`);
     const testResult = await runTests(taskDir);
 
-    const result = {
+    const result: EvaluationResult = {
       taskName,
       passed: testResult.passed,
       duration: testResult.duration,
       timestamp: new Date().toISOString(),
       error: testResult.error,
+      errorType: testResult.errorType,
+      testsRun: testResult.testsRun,
+      testsPassed: testResult.testsPassed,
+      testsFailed: testResult.testsFailed,
     };
 
     // Save evaluation result to file
-    const evalResultFile = join(taskDir, "evaluation-result.json");
     writeFileSync(evalResultFile, JSON.stringify(result, null, 2), "utf-8");
 
     // Restore original src
@@ -289,10 +401,10 @@ async function main() {
     if (result) {
       if (result.passed) {
         passed++;
-        console.log(`  ✅ PASSED (${result.duration.toFixed(0)}ms)\n`);
+        console.log(`  ✅ PASSED (${result.duration.toFixed(0)}ms) [${result.testsPassed || 0}/${result.testsRun || 0} tests]\n`);
       } else {
         failed++;
-        console.log(`  ❌ FAILED (${result.duration.toFixed(0)}ms)\n`);
+        console.log(`  ❌ FAILED (${result.duration.toFixed(0)}ms) - ${result.errorType}\n`);
         if (result.error) {
           const errorLines = result.error.split('\n').slice(0, 3);
           errorLines.forEach(line => console.log(`     ${line}`));

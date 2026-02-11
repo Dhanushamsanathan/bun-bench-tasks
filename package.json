@@ -10,10 +10,12 @@
     "test:all": "for dir in tasks/task-*; do echo \"Testing $dir...\"; cd $dir && bun test 2>/dev/null || true; cd ../..; done",
     "test:solutions": "bun run scripts/test-solutions.ts",
     "validate": "bun run scripts/validate-tasks.ts",
+    "validate-results": "bun run scripts/validate-results.ts",
     "list": "ls -1 tasks/",
     "benchmark": "bun run scripts/benchmark.ts",
     "inference": "bun run scripts/run-inference.ts",
-    "evaluate": "bun run scripts/run-evaluation.ts"
+    "evaluate": "bun run scripts/run-evaluation.ts",
+    "report": "bun run scripts/generate-report.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"

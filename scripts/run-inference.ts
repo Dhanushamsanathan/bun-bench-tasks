@@ -20,9 +20,11 @@ interface InferenceResponse {
   model: string;
   timestamp: string;
   inferenceDuration: number;
+  attempts: number;
   prompt: string;
   response: string;
   fixedCode?: string;
+  tokensUsed?: number;
 }
 
 /**
@@ -88,12 +90,37 @@ For multiple files, repeat the format above.`;
 /**
  * Send request to OpenRouter API
  */
-async function callOpenRouter(prompt: string): Promise<string> {
+async function callOpenRouter(
+  prompt: string,
+  previousAttempts?: Array<{ attempt: number; error: string }>
+): Promise<{ content: string; tokensUsed: number }> {
   const apiKey = Bun.env.OPENROUTER_API_KEY;
   const model = Bun.env.OPENROUTER_MODEL || "qwen/qwen3-next-80b-a3b-thinking";
 
   if (!apiKey) {
     throw new Error("OPENROUTER_API_KEY not set in .env");
+  }
+
+  // Build messages with previous attempt feedback
+  const messages: Array<{ role: string; content: string }> = [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ];
+
+  if (previousAttempts && previousAttempts.length > 0) {
+    messages.push({
+      role: "assistant",
+      content: previousAttempts[previousAttempts.length - 1].response || "(No response generated)",
+    });
+
+    messages.push({
+      role: "user",
+      content: `Your previous attempt(s) failed. Here's the feedback:\n${previousAttempts
+        .map((a) => `Attempt ${a.attempt}: ${a.error}`)
+        .join("\n")}\n\nPlease fix the issues and try again.`,
+    });
   }
 
   console.log(`  📡 Calling OpenRouter (model: ${model})...`);
@@ -108,12 +135,7 @@ async function callOpenRouter(prompt: string): Promise<string> {
     },
     body: JSON.stringify({
       model,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
+      messages,
       temperature: 0.7,
       max_tokens: 8000,
     }),
@@ -125,13 +147,51 @@ async function callOpenRouter(prompt: string): Promise<string> {
   }
 
   const data = (await response.json()) as any;
-  return data.choices[0].message.content;
+  const content = data.choices[0].message.content;
+  const tokensUsed = data.usage?.total_tokens || 0;
+
+  return { content, tokensUsed };
 }
 
 /**
- * Run inference on a single task
+ * Check if code has obvious syntax errors by trying to parse it
  */
-async function runInference(taskName: string): Promise<InferenceResponse | null> {
+function hasSyntaxErrors(code: string): boolean {
+  try {
+    // Simple checks for common syntax errors
+    if (code.includes("SyntaxError")) return true;
+    if (!code.trim()) return true;
+    if ((code.match(/\{/g) || []).length !== (code.match(/\}/g) || []).length) return true;
+    if ((code.match(/\(/g) || []).length !== (code.match(/\)/g) || []).length) return true;
+    return false;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Extract code blocks from response
+ */
+function extractCodeFromResponse(response: string): { [filename: string]: string } {
+  const codeBlockRegex = /```typescript\n([\s\S]*?)```/g;
+  const files: { [filename: string]: string } = {};
+  let match;
+
+  while ((match = codeBlockRegex.exec(response)) !== null) {
+    const block = match[1].trim();
+    const fileMatch = block.match(/\/\/\s*(?:File|file):\s*src\/(.+?)\n/);
+    let filename = fileMatch ? fileMatch[1] : "code.ts";
+    let code = fileMatch ? block.replace(/\/\/\s*(?:File|file):\s*src\/.+?\n/, "") : block;
+    files[filename] = code;
+  }
+
+  return files;
+}
+
+/**
+ * Run inference on a single task with multiple attempts
+ */
+async function runInference(taskName: string, maxAttempts: number = 3): Promise<InferenceResponse | null> {
   const taskDir = join(tasksDir, taskName);
   const readmeFile = join(taskDir, "README.md");
   const srcDir = join(taskDir, "src");
@@ -159,33 +219,72 @@ async function runInference(taskName: string): Promise<InferenceResponse | null>
 
   const prompt = buildPrompt(taskName, readme, buggyCode);
 
-  // Call OpenRouter and measure duration
-  let response: string;
-  let inferenceDuration: number;
-  try {
-    const startTime = performance.now();
-    response = await callOpenRouter(prompt);
-    inferenceDuration = performance.now() - startTime;
-  } catch (error) {
-    console.error(`  ❌ API call failed: ${error}`);
-    return null;
+  // Multiple attempts loop
+  const attempts: Array<{ attempt: number; response: string; error: string }> = [];
+  let finalResponse = "";
+  let totalDuration = 0;
+  let totalTokens = 0;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    console.log(`  \n  🔄 Attempt ${attempt}/${maxAttempts}`);
+
+    // Call OpenRouter and measure duration
+    try {
+      const startTime = performance.now();
+      const { content, tokensUsed } = await callOpenRouter(
+        prompt,
+        attempts.length > 0 ? attempts : undefined
+      );
+      const duration = performance.now() - startTime;
+
+      finalResponse = content;
+      totalDuration += duration;
+      totalTokens += tokensUsed;
+
+      console.log(`  ✅ Response received (${duration.toFixed(0)}ms, ${tokensUsed} tokens)`);
+
+      // Extract code and check for syntax errors
+      const codeFiles = extractCodeFromResponse(content);
+      const hasErrors = Object.values(codeFiles).some(hasSyntaxErrors);
+
+      if (hasErrors && attempt < maxAttempts) {
+        const errorMsg = "Syntax errors detected in generated code";
+        console.log(`  ⚠️  ${errorMsg} - retrying...`);
+        attempts.push({ attempt, response: content, error: errorMsg });
+        continue;
+      }
+
+      // Success or last attempt - save and return
+      const result: InferenceResponse = {
+        taskName,
+        model: Bun.env.OPENROUTER_MODEL || "unknown",
+        timestamp: new Date().toISOString(),
+        inferenceDuration: totalDuration,
+        attempts: attempt,
+        prompt: prompt.substring(0, 500) + "...",
+        response: finalResponse,
+        tokensUsed: totalTokens,
+      };
+
+      // Save response
+      writeFileSync(inferenceFile, JSON.stringify(result, null, 2), "utf-8");
+      console.log(`  💾 Saved to inference-response.json`);
+
+      if (attempt > 1) {
+        console.log(`  📊 Used ${attempt} attempts, ${totalTokens} total tokens`);
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`  ❌ API call failed: ${error}`);
+      if (attempt === maxAttempts) {
+        return null;
+      }
+      attempts.push({ attempt, response: "", error: String(error) });
+    }
   }
 
-  const result: InferenceResponse = {
-    taskName,
-    model: Bun.env.OPENROUTER_MODEL || "unknown",
-    timestamp: new Date().toISOString(),
-    inferenceDuration,
-    prompt: prompt.substring(0, 500) + "...", // Store truncated prompt for reference
-    response,
-  };
-
-  // Save response
-  const responseFile = join(taskDir, "inference-response.json");
-  writeFileSync(responseFile, JSON.stringify(result, null, 2), "utf-8");
-  console.log(`  ✅ Saved to inference-response.json (${inferenceDuration.toFixed(0)}ms)`);
-
-  return result;
+  return null;
 }
 
 /**
