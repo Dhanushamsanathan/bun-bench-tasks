@@ -76,6 +76,24 @@ function readAllTypeScriptFiles(dir: string): { [filename: string]: string } {
 }
 
 /**
+ * Get temperature based on task difficulty
+ */
+function getTemperature(taskName: string): number {
+  const taskNum = parseInt(taskName.split("-")[1]?.padStart(3, "0") || "0");
+
+  // Easy tasks: 001-010, 041-045
+  if ((taskNum >= 1 && taskNum <= 10) || (taskNum >= 41 && taskNum <= 45)) {
+    return 0.1;
+  }
+  // Medium tasks: 011-030, 051-056, 068-072
+  if ((taskNum >= 11 && taskNum <= 30) || (taskNum >= 51 && taskNum <= 56) || (taskNum >= 68 && taskNum <= 72)) {
+    return 0.3;
+  }
+  // Hard tasks: 031-040, 046-050, 057-067, 073-080
+  return 0.5;
+}
+
+/**
  * Build prompt with optional error feedback
  */
 function buildPrompt(
@@ -88,37 +106,30 @@ function buildPrompt(
     .map(([filename, content]) => `\n## File: ${filename}\n\`\`\`typescript\n${content}\n\`\`\``)
     .join("\n");
 
-  let prompt = `You are a Bun.js expert. Your task is to fix the buggy code in this task.
+  let prompt = `You are an expert Bun.js developer. Your task is to fix the buggy code below.
 
 Task: ${taskName}
 
 ## Problem Description
 ${readme}
 
-## Buggy Source Code
-${codeBlock}
-
 ## Instructions
-1. Analyze the problem and the failing tests mentioned in the README
-2. Fix the buggy code in the src/ files
-3. Return ONLY the fixed code files in the same format
-4. Do not return test files or solution files
-5. Preserve all function signatures and exports
-6. Include only the files that need to be changed
-
-Return your fixed code in this format:
-\`\`\`typescript
+1. Read the problem carefully and understand what's broken
+2. Fix ONLY the bugs - do not refactor working code
+3. Think through the test cases mentally before writing code
+4. Return fixed code in this format: \`\`\`typescript
 // File: src/filename.ts
 [fixed code here]
 \`\`\`
 
-For multiple files, repeat the format above.`;
+## Buggy Source Code
+${codeBlock}`;
 
   // Add error feedback if this is a retry attempt
   if (previousErrors && previousErrors.length > 0) {
-    prompt += `\n\n## ⚠️ Previous Attempt Failed\n\nYour previous fix did not pass the tests. Here is the feedback:\n\n`;
-    prompt += previousErrors.map((err, i) => `### Attempt ${i + 1} Error:\n${err}`).join("\n\n");
-    prompt += `\n\nPlease analyze these errors and fix the issues in your next attempt.`;
+    prompt += `\n\n## ⚠️ Previous Attempts Failed\n\nYour previous fix did not pass. Here is the specific feedback:\n\n`;
+    prompt += previousErrors.map((err, i) => `### Attempt ${i + 1}:\n${err}`).join("\n\n");
+    prompt += `\n\nPlease analyze these errors and fix the specific issues mentioned above.`;
   }
 
   return prompt;
@@ -129,7 +140,8 @@ For multiple files, repeat the format above.`;
  */
 async function callOpenRouter(
   prompt: string,
-  attemptNumber: number
+  attemptNumber: number,
+  taskName: string
 ): Promise<{ content: string; tokensUsed: number; duration: number }> {
   const apiKey = Bun.env.OPENROUTER_API_KEY;
   const model = Bun.env.OPENROUTER_MODEL || "unknown";
@@ -139,6 +151,7 @@ async function callOpenRouter(
   }
 
   const startTime = performance.now();
+  const temperature = getTemperature(taskName);
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -152,12 +165,16 @@ async function callOpenRouter(
       model,
       messages: [
         {
+          role: "system",
+          content: "You are a senior Bun.js developer. You write concise, correct code. Always explain your fixes briefly. Focus on fixing bugs rather than refactoring.",
+        },
+        {
           role: "user",
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 8000,
+      temperature,
+      max_tokens: 6000,
     }),
   });
 
@@ -302,7 +319,7 @@ async function runTests(taskDir: string): Promise<{
 }
 
 /**
- * Format error message for AI feedback
+ * Format error message for AI feedback - prioritize actionable errors
  */
 function formatErrorForAI(testResult: {
   error?: string;
@@ -313,25 +330,39 @@ function formatErrorForAI(testResult: {
 }): string {
   const lines: string[] = [];
 
-  lines.push(`**Error Type:** ${testResult.errorType}`);
-  lines.push(`**Tests:** ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
-  lines.push(`**Test Failures:** ${testResult.testsFailed || 0} tests failed`);
-
-  if (testResult.error) {
-    // Extract all "Expected / Received" lines
-    const errorLines = testResult.error.split("\n")
-      .filter(line => {
-        const lower = line.toLowerCase();
-        // Keep lines that show actual failures
-        return lower.includes("expected:") && lower.includes("received:");
-      });
-
-    if (errorLines.length > 0) {
-      lines.push(`**Error Details:**`);
-      lines.push("```");
-      // Show ALL failures (compact format)
-      lines.push(...errorLines);
-      lines.push("```");
+  // Prioritize by error severity
+  if (testResult.errorType === 'syntax_error' || testResult.errorType === 'type_error') {
+    lines.push(`🔴 CRITICAL: ${testResult.errorType.toUpperCase()}`);
+    lines.push(`Your code has ${testResult.errorType.replace('_', ' ')} - please fix this first.`);
+    if (testResult.error) {
+      const errorPreview = testResult.error.split('\n').slice(0, 3);
+      lines.push('Error preview:');
+      lines.push(...errorPreview);
+    }
+  } else if (testResult.errorType === 'test_failure') {
+    lines.push(`❌ Test Failures: ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
+    // Extract specific assertion failures
+    const assertions = testResult.error?.match(/expect\((.*?)\)\.\s*(.*?)Received/g);
+    if (assertions) {
+      lines.push(`Failed assertions (showing first 3):`);
+      lines.push(...assertions.slice(0, 3).map((_, i) => `  ${i + 1}. ${_}`).join('\n'));
+    }
+  } else {
+    lines.push(`**Error Type:** ${testResult.errorType}`);
+    lines.push(`**Tests:** ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
+    if (testResult.error) {
+      const errorLines = testResult.error.split("\n")
+        .filter(line => {
+          const lower = line.toLowerCase();
+          return lower.includes("expected:") && lower.includes("received:");
+        })
+        .slice(0, 5);
+      if (errorLines.length > 0) {
+        lines.push(`**Error Details:**`);
+        lines.push("```");
+        lines.push(...errorLines);
+        lines.push("```");
+      }
     }
   }
 
@@ -522,7 +553,7 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
           timestamp: new Date().toISOString(),
           inferenceDuration: duration,
           attempts: attempt,
-          prompt: prompt.substring(0, 500) + "...",
+          prompt: prompt,
           response: content,
           tokensUsed,
         };
@@ -546,7 +577,7 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
           timestamp: new Date().toISOString(),
           inferenceDuration: duration,
           attempts: attempt,
-          prompt: prompt.substring(0, 500) + "...",
+          prompt: prompt,
           response: content,
           tokensUsed,
         };
@@ -578,7 +609,7 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
  * Main
  */
 async function main() {
-  const args = process.argv.slice(2);
+  let args = process.argv.slice(2);
   let tasksToRun: string[] = [];
   const verbose = args.includes("--verbose");
   const showPrompt = args.includes("--show-prompt");

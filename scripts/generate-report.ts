@@ -396,6 +396,38 @@ function saveReport(report: BenchmarkReport, filename: string): void {
 }
 
 /**
+ * Detect anomalous patterns in results
+ */
+function detectAnomalies(report: BenchmarkReport): string[] {
+  const anomalies: string[] = [];
+
+  // Check if all tasks failed with same error
+  const errorCounts = Object.entries(report.byErrorType);
+  if (report.failed > 10 && errorCounts.length === 1) {
+    const [errorType, data] = errorCounts[0];
+    if (data.count === report.failed) {
+      anomalies.push(`⚠️ **All failures** are of type "${errorType}" - may indicate systemic issue`);
+    }
+  }
+
+  // Check for outlier categories (all failed or all passed)
+  for (const [category, data] of Object.entries(report.byCategory)) {
+    if (data.total >= 5 && data.passed === 0) {
+      anomalies.push(`⚠️ **${category}**: 0% pass rate (${data.total}/${data.total} failed)`);
+    } else if (data.total >= 5 && data.passed === data.total) {
+      anomalies.push(`✅ **${category}**: 100% pass rate (${data.total}/${data.total} passed)`);
+    }
+  }
+
+  // Check if pass rate is very low
+  if (report.summary.passed + report.summary.failed > 20 && report.summary.passRate < 20) {
+    anomalies.push(`⚠️ **Very low pass rate** (${report.summary.passRate.toFixed(1)}%) - may need prompt/model adjustment`);
+  }
+
+  return anomalies;
+}
+
+/**
  * Generate markdown report
  */
 function generateMarkdown(report: BenchmarkReport): string {
@@ -404,6 +436,17 @@ function generateMarkdown(report: BenchmarkReport): string {
   lines.push(`# Bun Benchmark - ${report.model}`);
   lines.push(`Generated: ${new Date(report.generatedAt).toLocaleString()}`);
   lines.push("");
+
+  // Anomalies section
+  const anomalies = detectAnomalies(report);
+  if (anomalies.length > 0) {
+    lines.push("## 📊 Anomaly Detection");
+    lines.push("");
+    for (const anomaly of anomalies) {
+      lines.push(`- ${anomaly}`);
+    }
+    lines.push("");
+  }
 
   // Summary
   lines.push("## Summary");
@@ -421,6 +464,7 @@ function generateMarkdown(report: BenchmarkReport): string {
   lines.push(`| Total Inference Time | ${(report.summary.totalInferenceTime / 1000 / 60).toFixed(1)}min |`);
   if (report.summary.totalTokensUsed > 0) {
     lines.push(`| Total Tokens Used | ${report.summary.totalTokensUsed.toLocaleString()} |`);
+    lines.push(`| Tokens per Task | ${(report.summary.totalTokensUsed / (report.summary.passed + report.summary.failed)).toFixed(0)} |`);
   }
   lines.push("");
 
@@ -430,7 +474,9 @@ function generateMarkdown(report: BenchmarkReport): string {
   lines.push(`| Type | Total | Passed | Failed | Pass Rate |`);
   lines.push(`|-----|-------|--------|--------|-----------|`);
 
-  for (const [type, data] of Object.entries(report.byType)) {
+  const sortedTypes = Object.entries(report.byType).sort((a, b) => b[1].passRate - a[1].passRate);
+
+  for (const [type, data] of sortedTypes) {
     lines.push(`| ${type} | ${data.total} | ${data.passed} | ${data.failed} | ${data.passRate.toFixed(1)}% |`);
   }
   lines.push("");
@@ -474,17 +520,22 @@ function generateMarkdown(report: BenchmarkReport): string {
   }
   lines.push("");
 
-  // Failed Tasks
+  // Failed Tasks (top 10 only to reduce clutter)
   if (report.failedTasks.length > 0) {
     lines.push("## Failed Tasks");
     lines.push("");
-    for (const task of report.failedTasks) {
+    const tasksToShow = report.failedTasks.slice(0, 10);
+    for (const task of tasksToShow) {
       lines.push(`### ${task.taskName} (${task.errorType})`);
       if (task.error) {
         lines.push(`\`\`\``);
         lines.push(task.error);
         lines.push(`\`\`\``);
       }
+      lines.push("");
+    }
+    if (report.failedTasks.length > 10) {
+      lines.push(`*... and ${report.failedTasks.length - 10} more failed tasks*`);
       lines.push("");
     }
   }
