@@ -5,7 +5,8 @@ node_modules
 out
 dist
 *.tgz
-
+*.log
+*.md
 # code coverage
 coverage
 *.lcov
@@ -15,6 +16,7 @@ logs
 _.log
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 /*tasks-advanced
+/*tasks
 # dotenv environment variable files
 .env
 .env.development.local

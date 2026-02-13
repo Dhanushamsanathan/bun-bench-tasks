@@ -7,13 +7,44 @@
  * 2. Evaluation (run tests)
  * 3. If failed → Retry with error feedback (max 3 attempts)
  * 4. If passed → Move to next task
+ *
+ * Now supports GLM models via Google Cloud Partnership and Vertex AI models
  */
 
-import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync, mkdirSync, copyFileSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync, mkdirSync, copyFileSync, appendFileSync } from "fs";
 import { join } from "path";
 import { $ } from "bun";
 
 const tasksDir = join(import.meta.dir, "..", "tasks");
+const rootDir = join(import.meta.dir, "..");
+const logsDir = join(rootDir, "benchmark-logs");
+
+// Create logs directory if it doesn't exist
+if (!existsSync(logsDir)) {
+  mkdirSync(logsDir, { recursive: true });
+}
+
+// Log file setup - create unique log file for each run
+const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+const logFileName = `benchmark-${timestamp}.log`;
+const logFilePath = join(logsDir, logFileName);
+
+/**
+ * Log to both console and file
+ */
+function log(message: string): void {
+  console.log(message);
+  appendFileSync(logFilePath, message + '\n', 'utf-8');
+}
+
+/**
+ * Log separator line
+ */
+function logSeparator(char: string = '=', length: number = 60): void {
+  const line = char.repeat(length);
+  console.log(line);
+  appendFileSync(logFilePath, line + '\n', 'utf-8');
+}
 
 interface BenchmarkResult {
   taskName: string;
@@ -79,6 +110,10 @@ function readAllTypeScriptFiles(dir: string): { [filename: string]: string } {
  * Get temperature based on task difficulty
  */
 function getTemperature(taskName: string): number {
+  if (!taskName) {
+    return 0.3; // Default temperature
+  }
+
   const taskNum = parseInt(taskName.split("-")[1]?.padStart(3, "0") || "0");
 
   // Easy tasks: 001-010, 041-045
@@ -136,13 +171,13 @@ ${codeBlock}`;
 }
 
 /**
- * Call OpenRouter API
+ * Call OpenRouter API (updated to use direct fetch for all models)
  */
 async function callOpenRouter(
   prompt: string,
   attemptNumber: number,
   taskName: string
-): Promise<{ content: string; tokensUsed: number; duration: number }> {
+): Promise<{ content: string; tokensUsed: number; duration: number; modelInfo?: any }> {
   const apiKey = Bun.env.OPENROUTER_API_KEY;
   const model = Bun.env.OPENROUTER_MODEL || "unknown";
 
@@ -150,8 +185,10 @@ async function callOpenRouter(
     throw new Error("OPENROUTER_API_KEY not set in .env");
   }
 
-  const startTime = performance.now();
   const temperature = getTemperature(taskName);
+
+  // Direct OpenRouter API call for all models
+  const startTime = performance.now();
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -417,18 +454,18 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
   const evalFile = join(taskDir, "evaluation-result.json");
   const inferenceFile = join(taskDir, "inference-response.json");
 
-  console.log(`\n[${taskName}]`);
+  log(`\n[${taskName}]`);
 
   // Skip if already passed
   const state = getTaskState(taskName);
   if (state.passed) {
-    console.log(`  ⏭️  Already passed, skipping`);
+    log(`  ⏭️  Already passed, skipping`);
     return null;
   }
 
   // Read task files
   if (!existsSync(readmeFile) || !existsSync(srcDir)) {
-    console.log(`  ⚠️  Missing task files`);
+    log(`  ⚠️  Missing task files`);
     return null;
   }
 
@@ -441,47 +478,47 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
   const startTime = performance.now();
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    console.log(`  🔄 Attempt ${attempt}/${maxAttempts}`);
+    log(`  🔄 Attempt ${attempt}/${maxAttempts}`);
 
     // Build prompt (with error feedback if retry)
     const prompt = buildPrompt(taskName, readme, buggyCode, errors.length > 0 ? errors : undefined);
 
     // Show prompt preview in console
-    console.log(`  📝 Sending prompt to AI (${prompt.length} chars, ${errors.length} previous errors)`);
+    log(`  📝 Sending prompt to AI (${prompt.length} chars, ${errors.length} previous errors)`);
 
     // Show full prompt if --show-prompt flag is used
     if ((global as any).showPrompt) {
-      console.log(`\n  ╔════════════════════════════════════════════════════════════╗`);
-      console.log(`  ║ FULL PROMPT TO AI:                                            ║`);
-      console.log(`  ╚════════════════════════════════════════════════════════════╝`);
+      log(`\n  ╔════════════════════════════════════════════════════════════╗`);
+      log(`  ║ FULL PROMPT TO AI:                                            ║`);
+      log(`  ╚════════════════════════════════════════════════════════════╝`);
       // Show first 2000 chars of prompt
       const preview = prompt.substring(0, 2000);
       preview.split('\n').forEach(line => {
         const truncated = line.length > 70 ? line.substring(0, 67) + "..." : line;
-        console.log(`  ║ ${truncated.padEnd(70)} ║`);
+        log(`  ║ ${truncated.padEnd(70)} ║`);
       });
       if (prompt.length > 2000) {
-        console.log(`  ║ ${"...(prompt truncated, ".repeat(40)}...".padEnd(70)} ║`);
-        console.log(`  ║ ${`Total: ${prompt.length} characters`.padEnd(70)} ║`);
+        log(`  ║ ${"...(prompt truncated, ".repeat(40)}...".padEnd(70)} ║`);
+        log(`  ║ ${`Total: ${prompt.length} characters`.padEnd(70)} ║`);
       }
-      console.log(`  ╚════════════════════════════════════════════════════════════╝\n`);
+      log(`  ╚════════════════════════════════════════════════════════════╝\n`);
     }
 
     // Call AI
     try {
       const { content, tokensUsed, duration } = await callOpenRouter(prompt, attempt);
-      console.log(`  📡 AI Response (${duration.toFixed(0)}ms, ${tokensUsed} tokens)`);
+      log(`  📡 AI Response (${duration.toFixed(0)}ms, ${tokensUsed} tokens)`);
 
       // Show error feedback preview
       if (errors.length > 0) {
-        console.log(`  📋 Error feedback included (${errors.length} errors)`);
+        log(`  📋 Error feedback included (${errors.length} errors)`);
         const lastError = errors[errors.length - 1];
         const preview = lastError.split('\n').slice(0, 3).join('\n');
-        console.log(`  ┌────────────────────────────────────────┐`);
-        console.log(`  │ Last Error (preview):                  │`);
-        console.log(`  └────────────────────────────────────────┘`);
-        preview.split('\n').forEach(line => console.log(`  │ ${line.substring(0, 40)}${line.length > 40 ? '...' : ''} `));
-        console.log(`  └────────────────────────────────────────┘`);
+        log(`  ┌────────────────────────────────────────┐`);
+        log(`  │ Last Error (preview):                  │`);
+        log(`  └────────────────────────────────────────┘`);
+        preview.split('\n').forEach(line => log(`  │ ${line.substring(0, 40)}${line.length > 40 ? '...' : ''} `));
+        log(`  └────────────────────────────────────────┘`);
       }
 
       // Debug: Save each attempt's response for inspection
@@ -497,8 +534,8 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
       // Extract code
       const fixes = extractFixedCode(content);
       if (Object.keys(fixes).length === 0) {
-        console.log(`  ⚠️  No code generated`);
-        console.log(`  💾 Check attempt-${attempt}.json to see AI's response`);
+        log(`  ⚠️  No code generated`);
+        log(`  💾 Check attempt-${attempt}.json to see AI's response`);
         errors.push(formatErrorForAI({
           errorType: "no_code_generated",
           error: "AI did not generate any code blocks",
@@ -506,23 +543,20 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
         continue;
       }
 
-      console.log(`  📝 Found ${Object.keys(fixes).length} file(s) to fix`);
+      log(`  📝 Found ${Object.keys(fixes).length} file(s) to fix`);
 
       // Apply fixes
       const backupDir = backupSource(taskDir);
       applyFixes(taskDir, fixes);
 
       // Run tests
-      console.log(`  🧪 Running tests...`);
+      log(`  🧪 Running tests...`);
       const testResult = await runTests(taskDir);
 
-      // Restore source
-      restoreSource(taskDir, backupDir);
-
       if (testResult.passed) {
-        // Success!
+        // Success! Save results and restore original code for clean next run
         const totalDuration = performance.now() - startTime;
-        console.log(`  ✅ PASSED (${testResult.duration.toFixed(0)}ms) [${testResult.testsPassed}/${testResult.testsRun} tests]`);
+        log(`  ✅ PASSED (${testResult.duration.toFixed(0)}ms) [${testResult.testsPassed}/${testResult.testsRun} tests]`);
 
         finalResult = {
           taskName,
@@ -559,12 +593,18 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
         };
         writeFileSync(inferenceFile, JSON.stringify(inferResult, null, 2), "utf-8");
 
+        // Restore original code for clean next benchmark run
+        restoreSource(taskDir, backupDir);
+
         return finalResult;
       } else {
-        // Failed - add error and retry
-        console.log(`  ❌ FAILED - ${testResult.errorType} [${testResult.testsPassed || 0}/${testResult.testsRun || 0} tests]`);
+        // Failed - restore original code before retrying
+        restoreSource(taskDir, backupDir);
+
+        // Add error and retry
+        log(`  ❌ FAILED - ${testResult.errorType} [${testResult.testsPassed || 0}/${testResult.testsRun || 0} tests]`);
         if (testResult.error && testResult.error.length < 200) {
-          console.log(`     ${testResult.error.split("\n")[0]}`);
+          log(`     ${testResult.error.split("\n")[0]}`);
         }
 
         const errorMsg = formatErrorForAI(testResult);
@@ -584,14 +624,21 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
         writeFileSync(inferenceFile, JSON.stringify(inferResult, null, 2), "utf-8");
       }
     } catch (error) {
-      console.log(`  ❌ Error: ${error}`);
+      log(`  ❌ Error: ${error}`);
+
+      // Restore code if backup exists (error occurred after backup was created)
+      const backupDir = join(taskDir, ".src-backup");
+      if (existsSync(backupDir)) {
+        restoreSource(taskDir, backupDir);
+      }
+
       errors.push(`**API Error:** ${error}`);
     }
   }
 
   // All attempts failed
   const totalDuration = performance.now() - startTime;
-  console.log(`  ⏭️  Skipped after ${maxAttempts} failed attempts`);
+  log(`  ⏭️  Skipped after ${maxAttempts} failed attempts`);
 
   finalResult = {
     taskName,
@@ -601,6 +648,12 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
     timestamp: new Date().toISOString(),
     errors,
   };
+
+  // Restore original code for clean next benchmark run
+  const backupDir = join(taskDir, ".src-backup");
+  if (existsSync(backupDir)) {
+    restoreSource(taskDir, backupDir);
+  }
 
   return finalResult;
 }
@@ -625,15 +678,19 @@ async function main() {
     tasksToRun = args;
   }
 
-  console.log(`${"=".repeat(60)}`);
-  console.log(`BUN BENCHMARK - TASK-BY-TASK WORKFLOW`);
-  console.log(`${"=".repeat(60)}`);
-  console.log(`Model: ${Bun.env.OPENROUTER_MODEL || "unknown"}`);
-  console.log(`Tasks: ${tasksToRun.length}`);
-  console.log(`Max attempts per task: 3`);
-  if (verbose) console.log(`Verbose: ON`);
-  if (showPrompt) console.log(`Show prompts: ON`);
-  console.log(`${"=".repeat(60)}`);
+  // Initialize log file
+  console.log(`📁 Logging to: ${logFilePath}`);
+  console.log(`📁 Logs directory: ${logsDir}\n`);
+
+  logSeparator('=', 60);
+  log(`BUN BENCHMARK - TASK-BY-TASK WORKFLOW`);
+  logSeparator('=', 60);
+  log(`Model: ${Bun.env.OPENROUTER_MODEL || "unknown"}`);
+  log(`Tasks: ${tasksToRun.length}`);
+  log(`Max attempts per task: 3`);
+  if (verbose) log(`Verbose: ON`);
+  if (showPrompt) log(`Show prompts: ON`);
+  logSeparator('=', 60);
 
   // Export verbose flag for processTask
   (global as any).verbose = verbose;
@@ -646,9 +703,9 @@ async function main() {
 
   for (let i = 0; i < tasksToRun.length; i++) {
     const taskName = tasksToRun[i];
-    console.log(`\n${"=".repeat(60)}`);
-    console.log(`Task ${i + 1}/${tasksToRun.length}: ${taskName}`);
-    console.log(`${"=".repeat(60)}`);
+    log(`\n${"=".repeat(60)}`);
+    log(`Task ${i + 1}/${tasksToRun.length}: ${taskName}`);
+    log(`${"=".repeat(60)}`);
 
     const result = await processTask(taskName);
 
@@ -665,16 +722,16 @@ async function main() {
   }
 
   // Summary
-  console.log(`\n${"=".repeat(60)}`);
-  console.log(`BENCHMARK SUMMARY`);
-  console.log(`${"=".repeat(60)}`);
-  console.log(`Passed:   ${passed} ✅`);
-  console.log(`Failed:   ${failed} ❌`);
-  console.log(`Skipped:  ${skipped} ⏭️`);
+  log(`\n${"=".repeat(60)}`);
+  log(`BENCHMARK SUMMARY`);
+  log(`${"=".repeat(60)}`);
+  log(`Passed:   ${passed} ✅`);
+  log(`Failed:   ${failed} ❌`);
+  log(`Skipped:  ${skipped} ⏭️`);
   if (passed + failed > 0) {
-    console.log(`Success:  ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
+    log(`Success:  ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
   }
-  console.log(`${"=".repeat(60)}`);
+  log(`${"=".repeat(60)}`);
 }
 
 main().catch(console.error);

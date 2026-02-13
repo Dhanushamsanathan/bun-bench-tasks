@@ -27,5 +27,8 @@
     "typescript": "^5"
   },
   "keywords": ["bun", "benchmark", "ai", "evaluation", "testing"],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^6.21.0"
+  }
 }
