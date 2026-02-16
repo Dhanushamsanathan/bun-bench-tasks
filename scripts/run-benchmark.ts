@@ -223,49 +223,126 @@ async function callOpenRouter(
   }
 
   const data = (await response.json()) as any;
-  const content = data.choices[0].message.content;
-  const tokensUsed = data.usage?.total_tokens || 0;
+
+  // Debug: Log full API response structure to understand format differences
+  if (process.env.DEBUG_API_RESPONSE === 'true') {
+    console.log('🔍 DEBUG - Full API Response:', JSON.stringify(data, null, 2));
+  }
+
+  // Handle different response formats from various GLM models
+  let content = '';
+  if (data.choices && data.choices[0] && data.choices[0].message) {
+    // Standard OpenAI format (works with GLM-4.5 Air)
+    content = data.choices[0].message.content;
+  } else if (data.content) {
+    // Alternative format - some models use direct content field
+    content = data.content;
+  } else if (data.message && data.message.content) {
+    // Another alternative format
+    content = data.message.content;
+  } else {
+    // Last resort - try to find any string content
+    const searchForContent = (obj: any, path: string[] = []): string => {
+      for (const key of path) {
+        if (obj[key] && typeof obj[key] === 'string') {
+          return obj[key];
+        } else if (obj[key] && typeof obj[key] === 'object') {
+          const result = searchForContent(obj[key], [...path, key]);
+          if (result) return result;
+        }
+      }
+      return '';
+    };
+    content = searchForContent(data, ['choices', 'message', 'content', 'output', 'text']);
+  }
+
+  const tokensUsed = data.usage?.total_tokens || data.usage?.total_tokens || 0;
+
+  // Warn if content is empty despite token usage
+  if (!content && tokensUsed > 0) {
+    console.log('⚠️  WARNING: API returned tokens but no content extracted!');
+    console.log(`⚠️  Response structure:`, JSON.stringify(data, null, 2));
+  }
 
   return { content, tokensUsed, duration };
 }
 
 /**
  * Extract code blocks from AI response
+ * Handles multiple response formats and separates code from explanations
  */
 function extractFixedCode(response: string): { [filename: string]: string } {
   const files: { [filename: string]: string } = {};
+
+  // Try to find code blocks with proper file markers
   const codeBlockRegex = /```typescript\n([\s\S]*?)```/g;
   let match;
 
   while ((match = codeBlockRegex.exec(response)) !== null) {
-    const block = match[1].trim();
+    let block = match[1].trim();
+
+    // Extract file name from // File: src/filename.ts pattern
     const fileMatch = block.match(/\/\/\s*(?:File|file):\s*src\/(.+?)\n/);
     let filename: string;
     let code: string;
 
     if (fileMatch) {
       filename = fileMatch[1];
+      // Remove the file comment line
       code = block.replace(/\/\/\s*(?:File|file):\s*src\/.+?\n/, "");
     } else {
-      // Guess filename from content
-      if (block.includes("Bun.serve") || block.includes("export default")) {
+      // Try to guess filename from content patterns
+      if (block.includes("Bun.serve") || block.includes("export default") && block.includes("fetch")) {
         filename = "server.ts";
-      } else if (block.includes("export function") || block.includes("export const")) {
+      } else if (block.includes("export function") || block.includes("export const") || block.includes("interface ")) {
         filename = "index.ts";
+      } else if (block.includes("import { SQL }") || block.includes("import { sql }")) {
+        filename = "types.ts";
+      } else if (block.includes("describe(") || block.includes("test(")) {
+        filename = "test.ts";
       } else {
         filename = "code.ts";
       }
       code = block;
     }
 
-    // Remove explanation comments
+    // Stop extracting at markdown-style explanation sections
+    const explanationMarkers = [
+      "\n##",
+      "\n**",
+      "\n---",
+      "\nFixes Summary:",
+      "\n1.",
+      "\n2.",
+      "\n3.",
+      "\n4."
+    ];
+
+    for (const marker of explanationMarkers) {
+      const markerIndex = code.indexOf(marker);
+      if (markerIndex > 0) {
+        code = code.substring(0, markerIndex);
+        break;
+      }
+    }
+
+    // Clean up the code - remove obvious non-code lines
     code = code
       .split("\n")
-      .filter(line => !line.trim().startsWith("// BUG:") && !line.trim().startsWith("// This"))
+      .filter(line => {
+        const trimmed = line.trim();
+        // Keep actual code, remove explanation-only lines
+        if (trimmed.startsWith("// BUG:") || trimmed.startsWith("// This")) return false;
+        if (trimmed.match(/^\d+\./)) return false; // Numbered lists
+        if (trimmed.match(/^\*\*.*:\*\*$/)) return false; // Bold headers
+        if (trimmed.startsWith("---")) return false; // Horizontal rules
+        return true;
+      })
       .join("\n")
       .trim();
 
-    if (code) {
+    // Only add if we have meaningful code
+    if (code && code.length > 10 && (code.includes("import") || code.includes("export") || code.includes("function") || code.includes("const") || code.includes("class"))) {
       files[filename] = code;
     }
   }
@@ -382,7 +459,8 @@ function formatErrorForAI(testResult: {
     const assertions = testResult.error?.match(/expect\((.*?)\)\.\s*(.*?)Received/g);
     if (assertions) {
       lines.push(`Failed assertions (showing first 3):`);
-      lines.push(...assertions.slice(0, 3).map((_, i) => `  ${i + 1}. ${_}`).join('\n'));
+      const formattedAssertions = assertions.slice(0, 3).map((assertion, i) => `  ${i + 1}. ${assertion}`).join('\n');
+      lines.push(formattedAssertions);
     }
   } else {
     lines.push(`**Error Type:** ${testResult.errorType}`);
