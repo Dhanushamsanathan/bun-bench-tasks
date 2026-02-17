@@ -274,77 +274,118 @@ async function callOpenRouter(
 function extractFixedCode(response: string): { [filename: string]: string } {
   const files: { [filename: string]: string } = {};
 
-  // Try to find code blocks with proper file markers
-  const codeBlockRegex = /```typescript\n([\s\S]*?)```/g;
-  let match;
+  if (!response || response.trim().length === 0) {
+    console.log('🔍 EXTRACT DEBUG: Empty response received');
+    return files;
+  }
 
-  while ((match = codeBlockRegex.exec(response)) !== null) {
-    let block = match[1].trim();
+  // Try multiple code block patterns
+  const patterns = [
+    /```typescript\n([\s\S]*?)```/g,           // Standard markdown with typescript
+    /```ts\n([\s\S]*?)```/g,                   // Short form ts
+    /```javascript\n([\s\S]*?)```/g,            // JavaScript
+    /```js\n([\s\S]*?)```/g,                    // Short form js
+    /```\n([\s\S]*?)```/g                        // Plain code block
+  ];
 
-    // Extract file name from // File: src/filename.ts pattern
-    const fileMatch = block.match(/\/\/\s*(?:File|file):\s*src\/(.+?)\n/);
-    let filename: string;
-    let code: string;
+  let totalBlocks = 0;
 
-    if (fileMatch) {
-      filename = fileMatch[1];
-      // Remove the file comment line
-      code = block.replace(/\/\/\s*(?:File|file):\s*src\/.+?\n/, "");
-    } else {
-      // Try to guess filename from content patterns
-      if (block.includes("Bun.serve") || block.includes("export default") && block.includes("fetch")) {
-        filename = "server.ts";
-      } else if (block.includes("export function") || block.includes("export const") || block.includes("interface ")) {
-        filename = "index.ts";
-      } else if (block.includes("import { SQL }") || block.includes("import { sql }")) {
-        filename = "types.ts";
-      } else if (block.includes("describe(") || block.includes("test(")) {
-        filename = "test.ts";
+  for (const pattern of patterns) {
+    const codeBlockRegex = pattern;
+    codeBlockRegex.lastIndex = 0; // Reset regex state
+    let match;
+
+    while ((match = codeBlockRegex.exec(response)) !== null) {
+      totalBlocks++;
+      let block = match[1].trim();
+
+      // Extract file name from // File: src/filename.ts pattern
+      const fileMatch = block.match(/\/\/\s*(?:File|file):\s*src\/(.+?)\n/);
+      let filename: string;
+      let code: string;
+
+      if (fileMatch) {
+        filename = fileMatch[1];
+        // Remove the file comment line
+        code = block.replace(/\/\/\s*(?:File|file):\s*src\/.+?\n/, "");
       } else {
-        filename = "code.ts";
+        // Try to guess filename from content patterns
+        if (block.includes("Bun.serve") || (block.includes("export default") && block.includes("fetch"))) {
+          filename = "server.ts";
+        } else if (block.includes("export function") || block.includes("export const") || block.includes("interface ")) {
+          filename = "index.ts";
+        } else if (block.includes("import { SQL }") || block.includes("import { sql }")) {
+          filename = "types.ts";
+        } else if (block.includes("describe(") || block.includes("test(")) {
+          filename = "test.ts";
+        } else {
+          filename = "code.ts";
+        }
+        code = block;
       }
-      code = block;
-    }
 
-    // Stop extracting at markdown-style explanation sections
-    const explanationMarkers = [
-      "\n##",
-      "\n**",
-      "\n---",
-      "\nFixes Summary:",
-      "\n1.",
-      "\n2.",
-      "\n3.",
-      "\n4."
-    ];
+      // Stop extracting at markdown-style explanation sections
+      const explanationMarkers = [
+        "\n##",
+        "\n**",
+        "\n---",
+        "\nFixes applied:",
+        "\nFixes Summary:",
+        "\n1.",
+        "\n2.",
+        "\n3.",
+        "\n4.",
+        "\n5.",
+        "\n6.",
+        "\n7."
+      ];
 
-    for (const marker of explanationMarkers) {
-      const markerIndex = code.indexOf(marker);
-      if (markerIndex > 0) {
-        code = code.substring(0, markerIndex);
-        break;
+      for (const marker of explanationMarkers) {
+        const markerIndex = code.indexOf(marker);
+        if (markerIndex > 0) {
+          code = code.substring(0, markerIndex);
+          break;
+        }
+      }
+
+      // Clean up the code - remove obvious non-code lines
+      code = code
+        .split("\n")
+        .filter(line => {
+          const trimmed = line.trim();
+          // Keep actual code, remove explanation-only lines
+          if (trimmed.startsWith("// BUG:") || trimmed.startsWith("// This")) return false;
+          if (trimmed.match(/^\d+\./)) return false; // Numbered lists
+          if (trimmed.match(/^\*\*.*:\*\*$/)) return false; // Bold headers
+          if (trimmed.startsWith("---")) return false; // Horizontal rules
+          return true;
+        })
+        .join("\n")
+        .trim();
+
+      // More lenient check for meaningful code
+      const hasCodeIndicators = code.includes("import") || code.includes("export") ||
+                               code.includes("function") || code.includes("const") ||
+                               code.includes("class") || code.includes("var") ||
+                               code.includes("let") || code.includes("interface") ||
+                               code.includes("type") || code.includes("enum");
+
+      if (code && code.length > 10 && hasCodeIndicators) {
+        files[filename] = code;
       }
     }
+  }
 
-    // Clean up the code - remove obvious non-code lines
-    code = code
-      .split("\n")
-      .filter(line => {
-        const trimmed = line.trim();
-        // Keep actual code, remove explanation-only lines
-        if (trimmed.startsWith("// BUG:") || trimmed.startsWith("// This")) return false;
-        if (trimmed.match(/^\d+\./)) return false; // Numbered lists
-        if (trimmed.match(/^\*\*.*:\*\*$/)) return false; // Bold headers
-        if (trimmed.startsWith("---")) return false; // Horizontal rules
-        return true;
-      })
-      .join("\n")
-      .trim();
-
-    // Only add if we have meaningful code
-    if (code && code.length > 10 && (code.includes("import") || code.includes("export") || code.includes("function") || code.includes("const") || code.includes("class"))) {
-      files[filename] = code;
-    }
+  // Debug output if extraction failed but we had content
+  if (totalBlocks === 0 && response.length > 100) {
+    console.log('🔍 EXTRACT DEBUG: No code blocks found in response');
+    console.log(`🔍 Response length: ${response.length} chars`);
+    console.log(`🔍 Response preview: ${response.substring(0, 200)}...`);
+  } else if (Object.keys(files).length === 0 && totalBlocks > 0) {
+    console.log('🔍 EXTRACT DEBUG: Found code blocks but extracted no files');
+    console.log(`🔍 Total blocks found: ${totalBlocks}`);
+  } else {
+    console.log(`🔍 EXTRACT DEBUG: Successfully extracted ${Object.keys(files).length} file(s) from ${totalBlocks} block(s)`);
   }
 
   return files;
@@ -612,11 +653,12 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
       // Extract code
       const fixes = extractFixedCode(content);
       if (Object.keys(fixes).length === 0) {
-        log(`  ⚠️  No code generated`);
-        log(`  💾 Check attempt-${attempt}.json to see AI's response`);
+        log(`  ⚠️  Code extraction failed`);
+        log(`  💾 Check attempt-${attempt}.json to see AI's raw response`);
+        log(`  🔍 Debug info above shows why extraction failed`);
         errors.push(formatErrorForAI({
-          errorType: "no_code_generated",
-          error: "AI did not generate any code blocks",
+          errorType: "code_extraction_failed",
+          error: "Could not extract valid code from AI response - check debug output for details",
         }));
         continue;
       }
