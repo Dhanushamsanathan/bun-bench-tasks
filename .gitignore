@@ -1,6 +1,6 @@
 # dependencies (bun install)
 node_modules
-
+/*tasks-glm 5
 # output
 out
 dist

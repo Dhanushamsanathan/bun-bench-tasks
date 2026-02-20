@@ -25,8 +25,10 @@ if (!existsSync(logsDir)) {
 }
 
 // Log file setup - create unique log file for each run
-const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
-const logFileName = `benchmark-${timestamp}.log`;
+// Use model name in log file for easy identification
+const modelName = Bun.env.OPENROUTER_MODEL || 'unknown';
+const safeModelName = modelName.replace(/\//g, '-').replace(/[^\w-]/g, '');
+const logFileName = `${safeModelName} benchmark.log`;
 const logFilePath = join(logsDir, logFileName);
 
 /**
@@ -799,6 +801,17 @@ async function main() {
   }
 
   // Initialize log file
+  // If log file exists, create a new numbered file instead of overwriting
+  if (existsSync(logFilePath)) {
+    let counter = 1;
+    let numberedLogPath: string;
+    do {
+      numberedLogPath = join(logsDir, `${safeModelName}-${counter}.log`);
+      counter++;
+    } while (existsSync(numberedLogPath));
+    logFilePath = numberedLogPath;
+  }
+
   console.log(`📁 Logging to: ${logFilePath}`);
   console.log(`📁 Logs directory: ${logsDir}\n`);
 
