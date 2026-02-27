@@ -1,52 +1,43 @@
 #!/usr/bin/env bun
 /**
- * Combined Benchmark Script
+ * Bun Benchmark Runner
  *
- * Completes each task end-to-end before moving to the next:
- * 1. Inference (AI generates fix)
- * 2. Evaluation (run tests)
- * 3. If failed → Retry with error feedback (max 3 attempts)
- * 4. If passed → Move to next task
- *
- * Now supports GLM models via Google Cloud Partnership and Vertex AI models
+ * Runs AI-powered bug fixing on Bun.js tasks:
+ * 1. Inference - AI generates fix from buggy code + README
+ * 2. Evaluation - Run tests to verify fix
+ * 3. Retry - Up to 3 attempts with error feedback
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync, rmSync, mkdirSync, copyFileSync, appendFileSync } from "fs";
 import { join } from "path";
 import { $ } from "bun";
 
+// ============================================================================
+// Configuration
+// ============================================================================
+
 const tasksDir = join(import.meta.dir, "..", "tasks");
 const rootDir = join(import.meta.dir, "..");
 const logsDir = join(rootDir, "benchmark-logs");
 
-// Create logs directory if it doesn't exist
+const MAX_ATTEMPTS = 3;
+const MAX_TOKENS = 6000;
+
+// Ensure logs directory exists
 if (!existsSync(logsDir)) {
   mkdirSync(logsDir, { recursive: true });
 }
 
-// Log file setup - create unique log file for each run
-// Use model name in log file for easy identification
-const modelName = Bun.env.OPENROUTER_MODEL || 'unknown';
-const safeModelName = modelName.replace(/\//g, '-').replace(/[^\w-]/g, '');
-const logFileName = `${safeModelName} benchmark.log`;
-const logFilePath = join(logsDir, logFileName);
+// Log file naming
+const modelName = Bun.env.OPENROUTER_MODEL || "unknown";
+const safeModelName = modelName.replace(/\//g, "-").replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+const customLogFile = Bun.env.BENCHMARK_LOG_FILE;
+const logFileName = customLogFile ? `${customLogFile}.log` : `${safeModelName} benchmark.log`;
+let logFilePath = join(logsDir, logFileName);
 
-/**
- * Log to both console and file
- */
-function log(message: string): void {
-  console.log(message);
-  appendFileSync(logFilePath, message + '\n', 'utf-8');
-}
-
-/**
- * Log separator line
- */
-function logSeparator(char: string = '=', length: number = 60): void {
-  const line = char.repeat(length);
-  console.log(line);
-  appendFileSync(logFilePath, line + '\n', 'utf-8');
-}
+// ============================================================================
+// Interfaces
+// ============================================================================
 
 interface BenchmarkResult {
   taskName: string;
@@ -57,37 +48,51 @@ interface BenchmarkResult {
   errors: string[];
 }
 
+interface TestResult {
+  passed: boolean;
+  duration: number;
+  error?: string;
+  errorType: string;
+  testsRun?: number;
+  testsPassed?: number;
+  testsFailed?: number;
+}
+
 interface TaskState {
   hasInference: boolean;
   hasEvaluation: boolean;
   passed: boolean;
 }
 
-/**
- * Check task completion state
- */
-function getTaskState(taskName: string): TaskState {
-  const taskDir = join(tasksDir, taskName);
-  const inferenceFile = join(taskDir, "inference-response.json");
-  const evalFile = join(taskDir, "evaluation-result.json");
+interface FileMap { [filename: string]: string; }
 
-  const hasInference = existsSync(inferenceFile);
-  const hasEvaluation = existsSync(evalFile);
-
-  let passed = false;
-  if (hasEvaluation) {
-    const evalData = JSON.parse(readFileSync(evalFile, "utf-8"));
-    passed = evalData.passed === true;
-  }
-
-  return { hasInference, hasEvaluation, passed };
+interface InferenceResult {
+  content: string;
+  tokensUsed: number;
+  duration: number;
 }
 
-/**
- * Read all TypeScript files from a directory
- */
-function readAllTypeScriptFiles(dir: string): { [filename: string]: string } {
-  const files: { [filename: string]: string } = {};
+// ============================================================================
+// Logging
+// ============================================================================
+
+function log(message: string): void {
+  console.log(message);
+  appendFileSync(logFilePath, message + "\n", "utf-8");
+}
+
+function logSeparator(char = "=", length = 60): void {
+  const line = char.repeat(length);
+  console.log(line);
+  appendFileSync(logFilePath, line + "\n", "utf-8");
+}
+
+// ============================================================================
+// File Operations
+// ============================================================================
+
+function readAllTypeScriptFiles(dir: string): FileMap {
+  const files: FileMap = {};
 
   function walkDir(currentPath: string) {
     if (!existsSync(currentPath)) return;
@@ -108,37 +113,73 @@ function readAllTypeScriptFiles(dir: string): { [filename: string]: string } {
   return files;
 }
 
-/**
- * Get temperature based on task difficulty
- */
-function getTemperature(taskName: string): number {
-  if (!taskName) {
-    return 0.3; // Default temperature
+function backupSource(taskDir: string): string {
+  const srcDir = join(taskDir, "src");
+  const backupDir = join(taskDir, ".src-backup");
+
+  if (!existsSync(srcDir)) return backupDir;
+
+  rmSync(backupDir, { recursive: true, force: true });
+
+  for (const file of readdirSync(srcDir)) {
+    const srcPath = join(srcDir, file);
+    const destPath = join(backupDir, file);
+    mkdirSync(join(destPath, ".."), { recursive: true });
+    copyFileSync(srcPath, destPath);
   }
 
-  const taskNum = parseInt(taskName.split("-")[1]?.padStart(3, "0") || "0");
-
-  // Easy tasks: 001-010, 041-045
-  if ((taskNum >= 1 && taskNum <= 10) || (taskNum >= 41 && taskNum <= 45)) {
-    return 0.1;
-  }
-  // Medium tasks: 011-030, 051-056, 068-072
-  if ((taskNum >= 11 && taskNum <= 30) || (taskNum >= 51 && taskNum <= 56) || (taskNum >= 68 && taskNum <= 72)) {
-    return 0.3;
-  }
-  // Hard tasks: 031-040, 046-050, 057-067, 073-080
-  return 0.5;
+  return backupDir;
 }
 
-/**
- * Build prompt with optional error feedback
- */
-function buildPrompt(
-  taskName: string,
-  readme: string,
-  buggyCode: { [key: string]: string },
-  previousErrors?: string[]
-): string {
+function restoreSource(taskDir: string, backupDir: string): void {
+  const srcDir = join(taskDir, "src");
+
+  if (!existsSync(backupDir)) return;
+
+  rmSync(srcDir, { recursive: true, force: true });
+  mkdirSync(srcDir, { recursive: true });
+
+  for (const file of readdirSync(backupDir)) {
+    copyFileSync(join(backupDir, file), join(srcDir, file));
+  }
+
+  rmSync(backupDir, { recursive: true, force: true });
+}
+
+function applyFixes(taskDir: string, fixes: FileMap): void {
+  const srcDir = join(taskDir, "src");
+
+  for (const [filename, code] of Object.entries(fixes)) {
+    writeFileSync(join(srcDir, filename), code, "utf-8");
+  }
+}
+
+// ============================================================================
+// Task State
+// ============================================================================
+
+function getTaskState(taskName: string): TaskState {
+  const taskDir = join(tasksDir, taskName);
+  const inferenceFile = join(taskDir, "inference-response.json");
+  const evalFile = join(taskDir, "evaluation-result.json");
+
+  const hasInference = existsSync(inferenceFile);
+  const hasEvaluation = existsSync(evalFile);
+
+  let passed = false;
+  if (hasEvaluation) {
+    const evalData = JSON.parse(readFileSync(evalFile, "utf-8"));
+    passed = evalData.passed === true;
+  }
+
+  return { hasInference, hasEvaluation, passed };
+}
+
+// ============================================================================
+// Prompt Building
+// ============================================================================
+
+function buildPrompt(taskName: string, readme: string, buggyCode: FileMap, previousErrors?: string[]): string {
   const codeBlock = Object.entries(buggyCode)
     .map(([filename, content]) => `\n## File: ${filename}\n\`\`\`typescript\n${content}\n\`\`\``)
     .join("\n");
@@ -162,24 +203,41 @@ ${readme}
 ## Buggy Source Code
 ${codeBlock}`;
 
-  // Add error feedback if this is a retry attempt
   if (previousErrors && previousErrors.length > 0) {
-    prompt += `\n\n## ⚠️ Previous Attempts Failed\n\nYour previous fix did not pass. Here is the specific feedback:\n\n`;
-    prompt += previousErrors.map((err, i) => `### Attempt ${i + 1}:\n${err}`).join("\n\n");
-    prompt += `\n\nPlease analyze these errors and fix the specific issues mentioned above.`;
+    prompt += `\n\n## Previous Attempts Failed
+
+Your previous fix did not pass. Here is the specific feedback:
+
+${previousErrors.map((err, i) => `### Attempt ${i + 1}:\n${err}`).join("\n\n")}
+
+Please analyze these errors and fix the specific issues mentioned above.`;
   }
 
   return prompt;
 }
 
-/**
- * Call OpenRouter API (updated to use direct fetch for all models)
- */
-async function callOpenRouter(
-  prompt: string,
-  attemptNumber: number,
-  taskName: string
-): Promise<{ content: string; tokensUsed: number; duration: number; modelInfo?: any }> {
+// ============================================================================
+// Temperature Scaling
+// ============================================================================
+
+function getTemperature(taskName: string): number {
+  if (!taskName) return 0.3;
+
+  const taskNum = parseInt(taskName.split("-")[1]?.padStart(3, "0") || "0");
+
+  // Easy: 001-010, 041-045
+  if ((taskNum >= 1 && taskNum <= 10) || (taskNum >= 41 && taskNum <= 45)) return 0.1;
+  // Medium: 011-030, 051-056, 068-072
+  if ((taskNum >= 11 && taskNum <= 30) || (taskNum >= 51 && taskNum <= 56) || (taskNum >= 68 && taskNum <= 72)) return 0.3;
+  // Hard: 031-040, 046-050, 057-067, 073-080
+  return 0.5;
+}
+
+// ============================================================================
+// AI API
+// ============================================================================
+
+async function callOpenRouter(prompt: string, taskName: string): Promise<InferenceResult> {
   const apiKey = Bun.env.OPENROUTER_API_KEY;
   const model = Bun.env.OPENROUTER_MODEL || "unknown";
 
@@ -187,9 +245,6 @@ async function callOpenRouter(
     throw new Error("OPENROUTER_API_KEY not set in .env");
   }
 
-  const temperature = getTemperature(taskName);
-
-  // Direct OpenRouter API call for all models
   const startTime = performance.now();
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -203,17 +258,11 @@ async function callOpenRouter(
     body: JSON.stringify({
       model,
       messages: [
-        {
-          role: "system",
-          content: "You are a senior Bun.js developer. You write concise, correct code. Always explain your fixes briefly. Focus on fixing bugs rather than refactoring.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
+        { role: "system", content: "You are a senior Bun.js developer. Write concise, correct code. Focus on fixing bugs rather than refactoring." },
+        { role: "user", content: prompt },
       ],
-      temperature,
-      max_tokens: 6000,
+      temperature: getTemperature(taskName),
+      max_tokens: MAX_TOKENS,
     }),
   });
 
@@ -226,92 +275,57 @@ async function callOpenRouter(
 
   const data = (await response.json()) as any;
 
-  // Debug: Log full API response structure to understand format differences
-  if (process.env.DEBUG_API_RESPONSE === 'true') {
-    console.log('🔍 DEBUG - Full API Response:', JSON.stringify(data, null, 2));
-  }
-
-  // Handle different response formats from various GLM models
-  let content = '';
-  if (data.choices && data.choices[0] && data.choices[0].message) {
-    // Standard OpenAI format (works with GLM-4.5 Air)
+  // Extract content from response
+  let content = "";
+  if (data.choices?.[0]?.message?.content) {
     content = data.choices[0].message.content;
   } else if (data.content) {
-    // Alternative format - some models use direct content field
     content = data.content;
-  } else if (data.message && data.message.content) {
-    // Another alternative format
+  } else if (data.message?.content) {
     content = data.message.content;
-  } else {
-    // Last resort - try to find any string content
-    const searchForContent = (obj: any, path: string[] = []): string => {
-      for (const key of path) {
-        if (obj[key] && typeof obj[key] === 'string') {
-          return obj[key];
-        } else if (obj[key] && typeof obj[key] === 'object') {
-          const result = searchForContent(obj[key], [...path, key]);
-          if (result) return result;
-        }
-      }
-      return '';
-    };
-    content = searchForContent(data, ['choices', 'message', 'content', 'output', 'text']);
   }
 
-  const tokensUsed = data.usage?.total_tokens || data.usage?.total_tokens || 0;
-
-  // Warn if content is empty despite token usage
-  if (!content && tokensUsed > 0) {
-    console.log('⚠️  WARNING: API returned tokens but no content extracted!');
-    console.log(`⚠️  Response structure:`, JSON.stringify(data, null, 2));
-  }
+  const tokensUsed = data.usage?.total_tokens || 0;
 
   return { content, tokensUsed, duration };
 }
 
-/**
- * Extract code blocks from AI response
- * Handles multiple response formats and separates code from explanations
- */
-function extractFixedCode(response: string): { [filename: string]: string } {
-  const files: { [filename: string]: string } = {};
+// ============================================================================
+// Code Extraction
+// ============================================================================
+
+function extractFixedCode(response: string): FileMap {
+  const files: FileMap = {};
 
   if (!response || response.trim().length === 0) {
-    console.log('🔍 EXTRACT DEBUG: Empty response received');
     return files;
   }
 
-  // Try multiple code block patterns
   const patterns = [
-    /```typescript\n([\s\S]*?)```/g,           // Standard markdown with typescript
-    /```ts\n([\s\S]*?)```/g,                   // Short form ts
-    /```javascript\n([\s\S]*?)```/g,            // JavaScript
-    /```js\n([\s\S]*?)```/g,                    // Short form js
-    /```\n([\s\S]*?)```/g                        // Plain code block
+    /```typescript\n([\s\S]*?)```/g,
+    /```ts\n([\s\S]*?)```/g,
+    /```javascript\n([\s\S]*?)```/g,
+    /```js\n([\s\S]*?)```/g,
+    /```\n([\s\S]*?)```/g,
   ];
 
-  let totalBlocks = 0;
-
   for (const pattern of patterns) {
-    const codeBlockRegex = pattern;
-    codeBlockRegex.lastIndex = 0; // Reset regex state
+    pattern.lastIndex = 0;
     let match;
 
-    while ((match = codeBlockRegex.exec(response)) !== null) {
-      totalBlocks++;
+    while ((match = pattern.exec(response)) !== null) {
       let block = match[1].trim();
 
-      // Extract file name from // File: src/filename.ts pattern
+      // Extract filename from // File: src/filename.ts
       const fileMatch = block.match(/\/\/\s*(?:File|file):\s*src\/(.+?)\n/);
       let filename: string;
       let code: string;
 
       if (fileMatch) {
         filename = fileMatch[1];
-        // Remove the file comment line
         code = block.replace(/\/\/\s*(?:File|file):\s*src\/.+?\n/, "");
       } else {
-        // Try to guess filename from content patterns
+        // Guess filename from content
         if (block.includes("Bun.serve") || (block.includes("export default") && block.includes("fetch"))) {
           filename = "server.ts";
         } else if (block.includes("export function") || block.includes("export const") || block.includes("interface ")) {
@@ -326,107 +340,54 @@ function extractFixedCode(response: string): { [filename: string]: string } {
         code = block;
       }
 
-      // Stop extracting at markdown-style explanation sections
-      const explanationMarkers = [
-        "\n##",
-        "\n**",
-        "\n---",
-        "\nFixes applied:",
-        "\nFixes Summary:",
-        "\n1.",
-        "\n2.",
-        "\n3.",
-        "\n4.",
-        "\n5.",
-        "\n6.",
-        "\n7."
-      ];
-
-      for (const marker of explanationMarkers) {
-        const markerIndex = code.indexOf(marker);
-        if (markerIndex > 0) {
-          code = code.substring(0, markerIndex);
+      // Trim at explanation sections
+      const markers = ["\n##", "\n**", "\n---", "\nFixes applied:", "\nFixes Summary:", "\n1.", "\n2.", "\n3.", "\n4.", "\n5.", "\n6.", "\n7."];
+      for (const marker of markers) {
+        const idx = code.indexOf(marker);
+        if (idx > 0) {
+          code = code.substring(0, idx);
           break;
         }
       }
 
-      // Clean up the code - remove obvious non-code lines
+      // Clean non-code lines
       code = code
         .split("\n")
         .filter(line => {
-          const trimmed = line.trim();
-          // Keep actual code, remove explanation-only lines
-          if (trimmed.startsWith("// BUG:") || trimmed.startsWith("// This")) return false;
-          if (trimmed.match(/^\d+\./)) return false; // Numbered lists
-          if (trimmed.match(/^\*\*.*:\*\*$/)) return false; // Bold headers
-          if (trimmed.startsWith("---")) return false; // Horizontal rules
+          const t = line.trim();
+          if (t.startsWith("// BUG:") || t.startsWith("// This")) return false;
+          if (t.match(/^\d+\./)) return false;
+          if (t.match(/^\*\*.*:\*\*$/)) return false;
+          if (t.startsWith("---")) return false;
           return true;
         })
         .join("\n")
         .trim();
 
-      // More lenient check for meaningful code
-      const hasCodeIndicators = code.includes("import") || code.includes("export") ||
-                               code.includes("function") || code.includes("const") ||
-                               code.includes("class") || code.includes("var") ||
-                               code.includes("let") || code.includes("interface") ||
-                               code.includes("type") || code.includes("enum");
+      // Validate as code
+      const hasCode = /import|export|function|const|class|var|let|interface|type|enum/.test(code);
 
-      if (code && code.length > 10 && hasCodeIndicators) {
+      if (code.length > 10 && hasCode) {
         files[filename] = code;
       }
     }
   }
 
-  // Debug output if extraction failed but we had content
-  if (totalBlocks === 0 && response.length > 100) {
-    console.log('🔍 EXTRACT DEBUG: No code blocks found in response');
-    console.log(`🔍 Response length: ${response.length} chars`);
-    console.log(`🔍 Response preview: ${response.substring(0, 200)}...`);
-  } else if (Object.keys(files).length === 0 && totalBlocks > 0) {
-    console.log('🔍 EXTRACT DEBUG: Found code blocks but extracted no files');
-    console.log(`🔍 Total blocks found: ${totalBlocks}`);
-  } else {
-    console.log(`🔍 EXTRACT DEBUG: Successfully extracted ${Object.keys(files).length} file(s) from ${totalBlocks} block(s)`);
-  }
-
   return files;
 }
 
-/**
- * Apply fixed code to src/ directory
- */
-function applyFixes(taskDir: string, fixes: { [filename: string]: string }): void {
-  const srcDir = join(taskDir, "src");
+// ============================================================================
+// Testing
+// ============================================================================
 
-  for (const [filename, code] of Object.entries(fixes)) {
-    const filePath = join(srcDir, filename);
-    writeFileSync(filePath, code, "utf-8");
-  }
-}
-
-/**
- * Run tests for a task
- */
-async function runTests(taskDir: string): Promise<{
-  passed: boolean;
-  duration: number;
-  error?: string;
-  errorType: string;
-  testsRun?: number;
-  testsPassed?: number;
-  testsFailed?: number;
-}> {
+async function runTests(taskDir: string): Promise<TestResult> {
   const startTime = performance.now();
 
   try {
     const result = await $`cd ${taskDir} && bun test`.nothrow();
     const duration = performance.now() - startTime;
-    const stderr = result.stderr.toString();
-    const stdout = result.stdout.toString();
-    const output = stderr + stdout;
+    const output = result.stderr.toString() + result.stdout.toString();
 
-    // Categorize error
     let errorType = "none";
     if (result.exitCode !== 0) {
       if (output.includes("timeout") || output.includes("timed out")) {
@@ -443,132 +404,65 @@ async function runTests(taskDir: string): Promise<{
     }
 
     // Parse test counts
-    let testsRun = 0;
     let testsPassed = 0;
     let testsFailed = 0;
-    const lines = output.split("\n");
-    for (const line of lines) {
+    for (const line of output.split("\n")) {
       const passMatch = line.match(/(\d+)\s+pass/);
       const failMatch = line.match(/(\d+)\s+fail/);
       if (passMatch) testsPassed += parseInt(passMatch[1]);
       if (failMatch) testsFailed += parseInt(failMatch[1]);
     }
-    testsRun = testsPassed + testsFailed;
 
     return {
       passed: result.exitCode === 0,
       duration,
       error: result.exitCode === 0 ? undefined : output.trim().substring(0, 1000),
       errorType,
-      testsRun,
+      testsRun: testsPassed + testsFailed,
       testsPassed,
       testsFailed,
     };
   } catch (error) {
-    const duration = performance.now() - startTime;
     return {
       passed: false,
-      duration,
+      duration: performance.now() - startTime,
       error: String(error).substring(0, 1000),
       errorType: "unknown",
     };
   }
 }
 
-/**
- * Format error message for AI feedback - prioritize actionable errors
- */
-function formatErrorForAI(testResult: {
-  error?: string;
-  errorType: string;
-  testsRun?: number;
-  testsPassed?: number;
-  testsFailed?: number;
-}): string {
+// ============================================================================
+// Error Formatting
+// ============================================================================
+
+function formatErrorForAI(testResult: TestResult): string {
   const lines: string[] = [];
 
-  // Prioritize by error severity
-  if (testResult.errorType === 'syntax_error' || testResult.errorType === 'type_error') {
-    lines.push(`🔴 CRITICAL: ${testResult.errorType.toUpperCase()}`);
-    lines.push(`Your code has ${testResult.errorType.replace('_', ' ')} - please fix this first.`);
+  if (testResult.errorType === "syntax_error" || testResult.errorType === "type_error") {
+    lines.push(`${testResult.errorType.toUpperCase()}: Fix this first.`);
     if (testResult.error) {
-      const errorPreview = testResult.error.split('\n').slice(0, 3);
-      lines.push('Error preview:');
-      lines.push(...errorPreview);
+      lines.push(...testResult.error.split("\n").slice(0, 3));
     }
-  } else if (testResult.errorType === 'test_failure') {
-    lines.push(`❌ Test Failures: ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
-    // Extract specific assertion failures
+  } else if (testResult.errorType === "test_failure") {
+    lines.push(`Tests: ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
     const assertions = testResult.error?.match(/expect\((.*?)\)\.\s*(.*?)Received/g);
     if (assertions) {
-      lines.push(`Failed assertions (showing first 3):`);
-      const formattedAssertions = assertions.slice(0, 3).map((assertion, i) => `  ${i + 1}. ${assertion}`).join('\n');
-      lines.push(formattedAssertions);
+      lines.push("Failed assertions:", ...assertions.slice(0, 3));
     }
   } else {
-    lines.push(`**Error Type:** ${testResult.errorType}`);
-    lines.push(`**Tests:** ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
-    if (testResult.error) {
-      const errorLines = testResult.error.split("\n")
-        .filter(line => {
-          const lower = line.toLowerCase();
-          return lower.includes("expected:") && lower.includes("received:");
-        })
-        .slice(0, 5);
-      if (errorLines.length > 0) {
-        lines.push(`**Error Details:**`);
-        lines.push("```");
-        lines.push(...errorLines);
-        lines.push("```");
-      }
-    }
+    lines.push(`Error: ${testResult.errorType}`);
+    lines.push(`Tests: ${testResult.testsPassed || 0}/${testResult.testsRun || 0} passed`);
   }
 
   return lines.join("\n");
 }
 
-/**
- * Backup and restore source code
- */
-function backupSource(taskDir: string): string {
-  const srcDir = join(taskDir, "src");
-  const backupDir = join(taskDir, ".src-backup");
+// ============================================================================
+// Task Processing
+// ============================================================================
 
-  if (!existsSync(srcDir)) return backupDir;
-
-  rmSync(backupDir, { recursive: true, force: true });
-
-  readdirSync(srcDir).forEach(file => {
-    const srcPath = join(srcDir, file);
-    const destPath = join(backupDir, file);
-    mkdirSync(join(destPath, ".."), { recursive: true });
-    copyFileSync(srcPath, destPath);
-  });
-
-  return backupDir;
-}
-
-function restoreSource(taskDir: string, backupDir: string): void {
-  const srcDir = join(taskDir, "src");
-
-  if (!existsSync(backupDir)) return;
-
-  rmSync(srcDir, { recursive: true, force: true });
-  mkdirSync(srcDir, { recursive: true });
-
-  readdirSync(backupDir).forEach(file => {
-    const src = join(backupDir, file);
-    const dest = join(srcDir, file);
-    copyFileSync(src, dest);
-  });
-
-  rmSync(backupDir, { recursive: true, force: true });
-}
-
-/**
- * Process a single task with retry logic
- */
-async function processTask(taskName: string, maxAttempts: number = 3): Promise<BenchmarkResult | null> {
+async function processTask(taskName: string): Promise<BenchmarkResult | null> {
   const taskDir = join(tasksDir, taskName);
   const readmeFile = join(taskDir, "README.md");
   const srcDir = join(taskDir, "src");
@@ -580,74 +474,34 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
   // Skip if already passed
   const state = getTaskState(taskName);
   if (state.passed) {
-    log(`  ⏭️  Already passed, skipping`);
+    log(`  Skipped (already passed)`);
     return null;
   }
 
-  // Read task files
   if (!existsSync(readmeFile) || !existsSync(srcDir)) {
-    log(`  ⚠️  Missing task files`);
+    log(`  Missing task files`);
     return null;
   }
 
   const readme = readFileSync(readmeFile, "utf-8");
   const buggyCode = readAllTypeScriptFiles(srcDir);
-
-  // Retry loop with test feedback
   const errors: string[] = [];
-  let finalResult: BenchmarkResult | null = null;
   const startTime = performance.now();
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    log(`  🔄 Attempt ${attempt}/${maxAttempts}`);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    log(`  Attempt ${attempt}/${MAX_ATTEMPTS}`);
 
-    // Build prompt (with error feedback if retry)
     const prompt = buildPrompt(taskName, readme, buggyCode, errors.length > 0 ? errors : undefined);
 
-    // Show prompt preview in console
-    log(`  📝 Sending prompt to AI (${prompt.length} chars, ${errors.length} previous errors)`);
-
-    // Show full prompt if --show-prompt flag is used
-    if ((global as any).showPrompt) {
-      log(`\n  ╔════════════════════════════════════════════════════════════╗`);
-      log(`  ║ FULL PROMPT TO AI:                                            ║`);
-      log(`  ╚════════════════════════════════════════════════════════════╝`);
-      // Show first 2000 chars of prompt
-      const preview = prompt.substring(0, 2000);
-      preview.split('\n').forEach(line => {
-        const truncated = line.length > 70 ? line.substring(0, 67) + "..." : line;
-        log(`  ║ ${truncated.padEnd(70)} ║`);
-      });
-      if (prompt.length > 2000) {
-        log(`  ║ ${"...(prompt truncated, ".repeat(40)}...".padEnd(70)} ║`);
-        log(`  ║ ${`Total: ${prompt.length} characters`.padEnd(70)} ║`);
-      }
-      log(`  ╚════════════════════════════════════════════════════════════╝\n`);
-    }
-
-    // Call AI
     try {
-      const { content, tokensUsed, duration } = await callOpenRouter(prompt, attempt);
-      log(`  📡 AI Response (${duration.toFixed(0)}ms, ${tokensUsed} tokens)`);
+      const { content, tokensUsed, duration } = await callOpenRouter(prompt, taskName);
+      log(`  AI response: ${tokensUsed} tokens, ${duration.toFixed(0)}ms`);
 
-      // Show error feedback preview
-      if (errors.length > 0) {
-        log(`  📋 Error feedback included (${errors.length} errors)`);
-        const lastError = errors[errors.length - 1];
-        const preview = lastError.split('\n').slice(0, 3).join('\n');
-        log(`  ┌────────────────────────────────────────┐`);
-        log(`  │ Last Error (preview):                  │`);
-        log(`  └────────────────────────────────────────┘`);
-        preview.split('\n').forEach(line => log(`  │ ${line.substring(0, 40)}${line.length > 40 ? '...' : ''} `));
-        log(`  └────────────────────────────────────────┘`);
-      }
-
-      // Debug: Save each attempt's response for inspection
-      const attemptFile = join(taskDir, `attempt-${attempt}.json`);
-      writeFileSync(attemptFile, JSON.stringify({
+      // Save attempt
+      writeFileSync(join(taskDir, `attempt-${attempt}.json`), JSON.stringify({
         attempt,
         timestamp: new Date().toISOString(),
-        prompt: prompt,
+        prompt,
         response: content,
         tokensUsed,
       }, null, 2), "utf-8");
@@ -655,42 +509,24 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
       // Extract code
       const fixes = extractFixedCode(content);
       if (Object.keys(fixes).length === 0) {
-        log(`  ⚠️  Code extraction failed`);
-        log(`  💾 Check attempt-${attempt}.json to see AI's raw response`);
-        log(`  🔍 Debug info above shows why extraction failed`);
-        errors.push(formatErrorForAI({
-          errorType: "code_extraction_failed",
-          error: "Could not extract valid code from AI response - check debug output for details",
-        }));
+        log(`  Code extraction failed`);
+        errors.push(`Could not extract code from AI response`);
         continue;
       }
 
-      log(`  📝 Found ${Object.keys(fixes).length} file(s) to fix`);
+      log(`  Fixed ${Object.keys(fixes).length} file(s)`);
 
-      // Apply fixes
+      // Apply and test
       const backupDir = backupSource(taskDir);
       applyFixes(taskDir, fixes);
-
-      // Run tests
-      log(`  🧪 Running tests...`);
       const testResult = await runTests(taskDir);
 
       if (testResult.passed) {
-        // Success! Save results and restore original code for clean next run
         const totalDuration = performance.now() - startTime;
-        log(`  ✅ PASSED (${testResult.duration.toFixed(0)}ms) [${testResult.testsPassed}/${testResult.testsRun} tests]`);
+        log(`  PASSED (${testResult.duration.toFixed(0)}ms) [${testResult.testsPassed}/${testResult.testsRun} tests]`);
 
-        finalResult = {
-          taskName,
-          passed: true,
-          attempts: attempt,
-          totalDuration,
-          timestamp: new Date().toISOString(),
-          errors: [],
-        };
-
-        // Save evaluation result
-        const evalResult = {
+        // Save results
+        writeFileSync(evalFile, JSON.stringify({
           taskName,
           passed: true,
           duration: testResult.duration,
@@ -699,110 +535,76 @@ async function processTask(taskName: string, maxAttempts: number = 3): Promise<B
           testsRun: testResult.testsRun,
           testsPassed: testResult.testsPassed,
           testsFailed: testResult.testsFailed,
-        };
-        writeFileSync(evalFile, JSON.stringify(evalResult, null, 2), "utf-8");
+        }, null, 2), "utf-8");
 
-        // Save inference result
-        const inferResult = {
+        writeFileSync(inferenceFile, JSON.stringify({
           taskName,
           model: Bun.env.OPENROUTER_MODEL || "unknown",
           timestamp: new Date().toISOString(),
           inferenceDuration: duration,
           attempts: attempt,
-          prompt: prompt,
+          prompt,
           response: content,
           tokensUsed,
-        };
-        writeFileSync(inferenceFile, JSON.stringify(inferResult, null, 2), "utf-8");
+        }, null, 2), "utf-8");
 
-        // Restore original code for clean next benchmark run
         restoreSource(taskDir, backupDir);
 
-        return finalResult;
+        return { taskName, passed: true, attempts: attempt, totalDuration, timestamp: new Date().toISOString(), errors: [] };
       } else {
-        // Failed - restore original code before retrying
         restoreSource(taskDir, backupDir);
-
-        // Add error and retry
-        log(`  ❌ FAILED - ${testResult.errorType} [${testResult.testsPassed || 0}/${testResult.testsRun || 0} tests]`);
-        if (testResult.error && testResult.error.length < 200) {
-          log(`     ${testResult.error.split("\n")[0]}`);
-        }
+        log(`  FAILED - ${testResult.errorType} [${testResult.testsPassed || 0}/${testResult.testsRun || 0}]`);
 
         const errorMsg = formatErrorForAI(testResult);
         errors.push(errorMsg);
 
-        // Save failed inference for transparency
-        const inferResult = {
+        // Save failed inference
+        writeFileSync(inferenceFile, JSON.stringify({
           taskName,
           model: Bun.env.OPENROUTER_MODEL || "unknown",
           timestamp: new Date().toISOString(),
           inferenceDuration: duration,
           attempts: attempt,
-          prompt: prompt,
+          prompt,
           response: content,
           tokensUsed,
-        };
-        writeFileSync(inferenceFile, JSON.stringify(inferResult, null, 2), "utf-8");
+        }, null, 2), "utf-8");
       }
     } catch (error) {
-      log(`  ❌ Error: ${error}`);
-
-      // Restore code if backup exists (error occurred after backup was created)
+      log(`  Error: ${error}`);
       const backupDir = join(taskDir, ".src-backup");
-      if (existsSync(backupDir)) {
-        restoreSource(taskDir, backupDir);
-      }
-
-      errors.push(`**API Error:** ${error}`);
+      if (existsSync(backupDir)) restoreSource(taskDir, backupDir);
+      errors.push(`API Error: ${error}`);
     }
   }
 
   // All attempts failed
   const totalDuration = performance.now() - startTime;
-  log(`  ⏭️  Skipped after ${maxAttempts} failed attempts`);
+  log(`  Failed after ${MAX_ATTEMPTS} attempts`);
 
-  finalResult = {
-    taskName,
-    passed: false,
-    attempts: maxAttempts,
-    totalDuration,
-    timestamp: new Date().toISOString(),
-    errors,
-  };
-
-  // Restore original code for clean next benchmark run
   const backupDir = join(taskDir, ".src-backup");
-  if (existsSync(backupDir)) {
-    restoreSource(taskDir, backupDir);
-  }
+  if (existsSync(backupDir)) restoreSource(taskDir, backupDir);
 
-  return finalResult;
+  return { taskName, passed: false, attempts: MAX_ATTEMPTS, totalDuration, timestamp: new Date().toISOString(), errors };
 }
 
-/**
- * Main
- */
+// ============================================================================
+// Main
+// ============================================================================
+
 async function main() {
-  let args = process.argv.slice(2);
-  let tasksToRun: string[] = [];
+  const args = process.argv.slice(2);
   const verbose = args.includes("--verbose");
   const showPrompt = args.includes("--show-prompt");
+  const appendMode = args.includes("--append");
 
-  // Filter out flags
-  args = args.filter(a => !a.startsWith("--"));
+  const taskArgs = args.filter(a => !a.startsWith("--"));
+  const tasksToRun = taskArgs.length === 0 || taskArgs[0] === "all"
+    ? readdirSync(tasksDir).filter(d => d.startsWith("task-")).sort()
+    : taskArgs;
 
-  if (args.length === 0 || args[0] === "all") {
-    tasksToRun = readdirSync(tasksDir)
-      .filter(d => d.startsWith("task-"))
-      .sort();
-  } else {
-    tasksToRun = args;
-  }
-
-  // Initialize log file
-  // If log file exists, create a new numbered file instead of overwriting
-  if (existsSync(logFilePath)) {
+  // Setup log file
+  if (existsSync(logFilePath) && !appendMode) {
     let counter = 1;
     let numberedLogPath: string;
     do {
@@ -812,22 +614,15 @@ async function main() {
     logFilePath = numberedLogPath;
   }
 
-  console.log(`📁 Logging to: ${logFilePath}`);
-  console.log(`📁 Logs directory: ${logsDir}\n`);
+  console.log(`Log: ${logFilePath}`);
 
-  logSeparator('=', 60);
-  log(`BUN BENCHMARK - TASK-BY-TASK WORKFLOW`);
-  logSeparator('=', 60);
-  log(`Model: ${Bun.env.OPENROUTER_MODEL || "unknown"}`);
+  logSeparator("=", 60);
+  log(`BUN BENCHMARK`);
+  logSeparator("=", 60);
+  log(`Model: ${modelName}`);
   log(`Tasks: ${tasksToRun.length}`);
-  log(`Max attempts per task: 3`);
-  if (verbose) log(`Verbose: ON`);
-  if (showPrompt) log(`Show prompts: ON`);
-  logSeparator('=', 60);
-
-  // Export verbose flag for processTask
-  (global as any).verbose = verbose;
-  (global as any).showPrompt = showPrompt;
+  log(`Max attempts: ${MAX_ATTEMPTS}`);
+  logSeparator("=", 60);
 
   const results: BenchmarkResult[] = [];
   let passed = 0;
@@ -835,20 +630,12 @@ async function main() {
   let skipped = 0;
 
   for (let i = 0; i < tasksToRun.length; i++) {
-    const taskName = tasksToRun[i];
-    log(`\n${"=".repeat(60)}`);
-    log(`Task ${i + 1}/${tasksToRun.length}: ${taskName}`);
-    log(`${"=".repeat(60)}`);
-
-    const result = await processTask(taskName);
+    log(`\n--- Task ${i + 1}/${tasksToRun.length}: ${tasksToRun[i]} ---`);
+    const result = await processTask(tasksToRun[i]);
 
     if (result) {
       results.push(result);
-      if (result.passed) {
-        passed++;
-      } else {
-        failed++;
-      }
+      result.passed ? passed++ : failed++;
     } else {
       skipped++;
     }
@@ -856,15 +643,14 @@ async function main() {
 
   // Summary
   log(`\n${"=".repeat(60)}`);
-  log(`BENCHMARK SUMMARY`);
+  log(`SUMMARY`);
   log(`${"=".repeat(60)}`);
-  log(`Passed:   ${passed} ✅`);
-  log(`Failed:   ${failed} ❌`);
-  log(`Skipped:  ${skipped} ⏭️`);
+  log(`Passed:  ${passed}`);
+  log(`Failed:  ${failed}`);
+  log(`Skipped: ${skipped}`);
   if (passed + failed > 0) {
-    log(`Success:  ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
+    log(`Success: ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
   }
-  log(`${"=".repeat(60)}`);
 }
 
 main().catch(console.error);
